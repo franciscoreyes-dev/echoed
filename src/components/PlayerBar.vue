@@ -37,7 +37,7 @@ const formatTime = (seconds: number) => {
         <div class="control-buttons">
           <BaseButton
             icon="pi pi-step-backward"
-            text
+            variant="text"
             rounded
             severity="secondary"
             aria-label="Previous"
@@ -49,12 +49,11 @@ const formatTime = (seconds: number) => {
             severity="primary"
             @click="togglePlay"
             aria-label="Play/Pause"
-            class="play-button"
           />
 
           <BaseButton
             icon="pi pi-step-forward"
-            text
+            variant="text"
             rounded
             severity="secondary"
             aria-label="Next"
@@ -85,7 +84,7 @@ const formatTime = (seconds: number) => {
       <div class="volume-control">
         <BaseButton
           icon="pi pi-volume-up"
-          text
+          variant="text"
           severity="secondary"
           size="small"
           aria-label="Volume"
@@ -115,14 +114,15 @@ const formatTime = (seconds: number) => {
   left: 0;
   right: 0;
   height: 90px;
-  background: linear-gradient(180deg, rgba(18, 18, 18, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%);
+  background: var(--bgColor-muted);
   backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--borderColor-default);
   z-index: 100;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .player-container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   height: 100%;
   display: grid;
@@ -151,11 +151,11 @@ const formatTime = (seconds: number) => {
 .artwork-placeholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #282828 0%, #181818 100%);
+  background: var(--bgColor-emphasis);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--fgColor-muted);
   font-size: 1.5rem;
 }
 
@@ -165,7 +165,7 @@ const formatTime = (seconds: number) => {
 
 .track-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--fgColor-default);
   font-size: 0.9rem;
   white-space: nowrap;
   overflow: hidden;
@@ -174,7 +174,7 @@ const formatTime = (seconds: number) => {
 
 .track-artist {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--fgColor-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -194,10 +194,6 @@ const formatTime = (seconds: number) => {
   gap: 1rem;
 }
 
-.play-button {
-  font-size: 1.25rem;
-}
-
 /* Progress Bar */
 .progress-container {
   display: flex;
@@ -208,7 +204,7 @@ const formatTime = (seconds: number) => {
 
 .time-label {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--fgColor-muted);
   min-width: 40px;
   text-align: center;
 }
@@ -216,7 +212,7 @@ const formatTime = (seconds: number) => {
 .progress-bar {
   flex: 1;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--borderColor-default);
   border-radius: 2px;
   position: relative;
   overflow: hidden;
@@ -233,14 +229,14 @@ const formatTime = (seconds: number) => {
 
 .progress-fill {
   height: 100%;
-  background: #1db954;
+  background: var(--button-primary-bgColor-rest);
   border-radius: 2px;
   transition: width 0.1s linear;
   pointer-events: none;
 }
 
 .progress-bar:hover .progress-fill {
-  background: #1ed760;
+  background: var(--button-primary-bgColor-hover);
 }
 
 /* Volume Control */
@@ -254,7 +250,7 @@ const formatTime = (seconds: number) => {
 .volume-slider-container {
   width: 100px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--borderColor-default);
   border-radius: 2px;
   position: relative;
   overflow: hidden;
@@ -271,14 +267,14 @@ const formatTime = (seconds: number) => {
 
 .volume-fill {
   height: 100%;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--fgColor-muted);
   border-radius: 2px;
   transition: width 0.1s linear;
   pointer-events: none;
 }
 
 .volume-slider-container:hover .volume-fill {
-  background: #1db954;
+  background: var(--button-primary-bgColor-rest);
 }
 
 /* Responsive */

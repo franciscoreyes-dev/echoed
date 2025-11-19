@@ -12,15 +12,17 @@
 <style scoped>
 .view-container {
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 h1 {
-  color: #fff;
+  color: var(--fgColor-default);
   font-size: 2rem;
   margin-bottom: 1rem;
 }
 
 p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--fgColor-muted);
 }
 </style>

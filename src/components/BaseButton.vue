@@ -7,8 +7,7 @@ interface Props {
   iconPos?: 'left' | 'right';
   severity?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'help';
   size?: 'small' | 'normal' | 'large';
-  outlined?: boolean;
-  text?: boolean;
+  variant?: 'text' | 'outlined';
   rounded?: boolean;
   disabled?: boolean;
   loading?: boolean;
@@ -18,8 +17,6 @@ const props = withDefaults(defineProps<Props>(), {
   iconPos: 'left',
   severity: 'primary',
   size: 'normal',
-  outlined: false,
-  text: false,
   rounded: false,
   disabled: false,
   loading: false,
@@ -30,8 +27,8 @@ const buttonClasses = computed(() => [
   `p-button-${props.severity}`,
   `p-button-${props.size}`,
   {
-    'p-button-outlined': props.outlined,
-    'p-button-text': props.text,
+    'p-button-outlined': props.variant === 'outlined',
+    'p-button-text': props.variant === 'text',
     'p-button-rounded': props.rounded,
     'p-button-icon-only': !props.label && props.icon,
     'p-button-loading': props.loading,
@@ -66,7 +63,7 @@ const iconClass = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 7px 10px;
   font-size: 1rem;
   font-weight: 500;
   border-radius: 6px;
@@ -78,9 +75,8 @@ const iconClass = computed(() => {
   user-select: none;
 }
 
-.p-button:focus {
-  outline: 2px solid var(--fgColor-accent, #4493f8);
-  outline-offset: 2px;
+.p-button-label {
+  margin-bottom: 1px;
 }
 
 .p-button:disabled {
@@ -90,42 +86,40 @@ const iconClass = computed(() => {
 
 /* Sizes */
 .p-button-small {
-  padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
 }
 
 .p-button-large {
-  padding: 0.75rem 1.5rem;
   font-size: 1.125rem;
 }
 
-/* Primary */
-.p-button-primary {
-  background: var(--button-primary-bgColor-rest, #238636);
-  color: var(--button-primary-fgColor-rest, #ffffff);
-  border-color: var(--button-primary-bgColor-rest, #238636);
+/* Primary - White text with dark background */
+.p-button-primary:not(.p-button-text):not(.p-button-outlined) {
+  background: var(--bgColor-emphasis, #3d444d);
+  color: var(--fgColor-default), #ffffff;
+  border-color: var(--bgColor-emphasis, #3d444d);
 }
 
-.p-button-primary:hover:not(:disabled) {
-  background: var(--button-primary-bgColor-hover, #29903b);
-  border-color: var(--button-primary-bgColor-hover, #29903b);
-}
-
-.p-button-primary:active:not(:disabled) {
-  background: var(--button-primary-bgColor-active, #2e9a40);
-  border-color: var(--button-primary-bgColor-active, #2e9a40);
-}
-
-/* Secondary */
-.p-button-secondary {
+.p-button-primary:not(.p-button-text):not(.p-button-outlined):hover:not(:disabled) {
   background: var(--bgColor-neutral-emphasis, #656c76);
-  color: var(--fgColor-default, #ffffff);
   border-color: var(--bgColor-neutral-emphasis, #656c76);
 }
 
-.p-button-secondary:hover:not(:disabled) {
-  background: var(--bgColor-emphasis, #3d444d);
-  border-color: var(--bgColor-emphasis, #3d444d);
+.p-button-primary:not(.p-button-text):not(.p-button-outlined):active:not(:disabled) {
+  background: var(--borderColor-emphasis, #656c76);
+  border-color: var(--borderColor-emphasis, #656c76);
+}
+
+/* Secondary - Dark text with light grey background */
+.p-button-secondary:not(.p-button-text):not(.p-button-outlined) {
+  background: var(--bgColor-muted, #f6f8fa);
+  color: var(--fgColor-default, #1f2328);
+  border-color: var(--borderColor-default, #d1d9e0);
+}
+
+.p-button-secondary:not(.p-button-text):not(.p-button-outlined):hover:not(:disabled) {
+  background: var(--bgColor-emphasis, #eaeef2);
+  border-color: var(--borderColor-emphasis, #8c959f);
 }
 
 /* Success */
@@ -173,73 +167,86 @@ const iconClass = computed(() => {
   opacity: 0.9;
 }
 
-/* Outlined */
+/* Outlined variant */
 .p-button-outlined {
   background: transparent;
-  border-color: var(--borderColor-default, #3d444d);
+  border-color: var(--borderColor-default);
 }
 
 .p-button-outlined.p-button-primary {
-  color: var(--button-primary-bgColor-rest, #238636);
-  border-color: var(--button-primary-bgColor-rest, #238636);
+  color: var(--fgColor-default);
+  border-color: var(--borderColor-emphasis);
 }
 
 .p-button-outlined.p-button-primary:hover:not(:disabled) {
-  background: var(--bgColor-success-muted, rgba(42, 134, 54, 0.15));
+  background: var(--bgColor-muted);
+  border-color: var(--borderColor-emphasis);
+}
+
+.p-button-outlined.p-button-secondary {
+  color: var(--fgColor-muted);
+  border-color: var(--borderColor-default);
+}
+
+.p-button-outlined.p-button-secondary:hover:not(:disabled) {
+  background: var(--bgColor-muted);
+  color: var(--fgColor-default);
 }
 
 .p-button-outlined.p-button-danger {
-  color: var(--bgColor-danger-emphasis, #da3633);
-  border-color: var(--bgColor-danger-emphasis, #da3633);
+  color: var(--bgColor-danger-emphasis);
+  border-color: var(--bgColor-danger-emphasis);
 }
 
 .p-button-outlined.p-button-danger:hover:not(:disabled) {
-  background: var(--bgColor-danger-muted, rgba(218, 54, 51, 0.1));
+  background: var(--bgColor-danger-muted);
 }
 
-/* Text only */
+/* Text variant - No background, only text */
 .p-button-text {
   background: transparent;
   border-color: transparent;
-  color: var(--fgColor-accent, #4493f8);
+}
+
+.p-button-text.p-button-primary {
+  color: var(--fgColor-default);
+}
+
+.p-button-text.p-button-secondary {
+  color: var(--fgColor-muted);
 }
 
 .p-button-text:hover:not(:disabled) {
-  background: var(--bgColor-neutral-muted, rgba(101, 108, 118, 0.2));
+  background: var(--bgColor-muted);
 }
 
-/* Rounded */
+/* Rounded - Applicable to all button types */
 .p-button-rounded {
   border-radius: 50%;
-  padding: 0.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
 }
 
-.p-button-rounded.p-button-small {
-  width: 2rem;
-  height: 2rem;
-  padding: 0.375rem;
+.p-button-rounded.p-button-icon-only {
+  border-radius: 50%;
 }
 
-.p-button-rounded.p-button-large {
-  width: 3rem;
-  height: 3rem;
-  padding: 0.75rem;
-}
-
-/* Icon only */
+/* Icon only - Always squared */
 .p-button-icon-only {
-  padding: 0.5rem;
-  width: 2.5rem;
+  padding: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
 }
 
 .p-button-icon-only.p-button-small {
-  width: 2rem;
+  width: 38px;
+  height: 38px;
+  padding: 8px;
 }
 
 .p-button-icon-only.p-button-large {
   width: 3rem;
+  height: 3rem;
+  padding: 12px;
 }
 
 /* Loading */

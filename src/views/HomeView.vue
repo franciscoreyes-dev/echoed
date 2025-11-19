@@ -31,7 +31,7 @@
 <style scoped>
 .view-container {
   padding: 2rem;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -43,12 +43,12 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--fgColor-default);
 }
 
 .subtitle {
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--fgColor-muted);
   margin: 0;
 }
 
@@ -59,8 +59,8 @@
 }
 
 .placeholder-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bgColor-muted);
+  border: 1px solid var(--borderColor-default);
   border-radius: 12px;
   padding: 2rem;
   min-height: 200px;
@@ -73,19 +73,19 @@
 }
 
 .placeholder-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--bgColor-emphasis);
+  border-color: var(--borderColor-emphasis);
   transform: translateY(-2px);
 }
 
 .placeholder-card h2 {
   font-size: 1.5rem;
   margin: 0 0 1rem 0;
-  color: #fff;
+  color: var(--fgColor-default);
 }
 
 .placeholder-card p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--fgColor-muted);
   margin: 0;
 }
 </style>
