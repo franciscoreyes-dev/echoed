@@ -4,9 +4,11 @@ import { computed } from 'vue';
 import Avatar from 'primevue/avatar';
 import BaseButton from './BaseButton.vue';
 import { useTheme } from '../composables/useTheme';
+import { useAuthStore } from '../stores/auth';
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 const { currentTheme, toggleTheme } = useTheme();
 
 const isActive = (routeName: string) => computed(() => route.name === routeName);
@@ -18,6 +20,23 @@ const navigateTo = (path: string) => {
 const themeIcon = computed(() =>
   currentTheme.value === 'light' ? 'pi pi-moon' : 'pi pi-sun'
 );
+
+const handleLogin = async () => {
+  await authStore.login();
+};
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/');
+};
+
+const userAvatar = computed(() => {
+  if (!authStore.user?.images || authStore.user.images.length === 0) {
+    return null;
+  }
+  // Get the smallest image (usually the last one)
+  return authStore.user.images[authStore.user.images.length - 1]?.url;
+});
 </script>
 
 <template>
@@ -63,15 +82,43 @@ const themeIcon = computed(() =>
           variant="outlined"
           @click="toggleTheme"
           :aria-label="`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} mode`"
-          size="small"
         />
-        <Avatar
-          image="/src/assets/fighter-avatar.jpg"
-          shape="circle"
-          @click="navigateTo('/profile')"
-          class="profile-avatar"
-          :class="{ active: isActive('profile').value }"
+
+        <!-- Not authenticated - show login button -->
+        <BaseButton
+          v-if="!authStore.isAuthenticated"
+          label="Connect to Spotify"
+          icon="pi pi-spotify"
+          severity="success"
+          @click="handleLogin"
         />
+
+        <!-- Authenticated - show user avatar and logout -->
+        <template v-else>
+          <Avatar
+            v-if="userAvatar"
+            :image="userAvatar"
+            shape="circle"
+            @click="navigateTo('/profile')"
+            class="profile-avatar"
+            :class="{ active: isActive('profile').value }"
+          />
+          <Avatar
+            v-else
+            icon="pi pi-user"
+            shape="circle"
+            @click="navigateTo('/profile')"
+            class="profile-avatar"
+            :class="{ active: isActive('profile').value }"
+          />
+          <BaseButton
+            icon="pi pi-sign-out"
+            severity="danger"
+            variant="text"
+            @click="handleLogout"
+            :aria-label="'Logout'"
+          />
+        </template>
       </div>
     </div>
   </header>

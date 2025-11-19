@@ -1,0 +1,206 @@
+/**
+ * Spotify API Client
+ * Axios instance configured with automatic token refresh and error handling
+ */
+
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
+import { SPOTIFY_CONFIG } from '../config/spotify';
+import { useAuthStore } from '../stores/auth';
+
+/**
+ * Create Axios instance for Spotify API
+ */
+const createSpotifyClient = (): AxiosInstance => {
+  const client = axios.create({
+    baseURL: SPOTIFY_CONFIG.endpoints.api,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  /**
+   * Request Interceptor
+   * Automatically adds Authorization header with valid access token
+   */
+  client.interceptors.request.use(
+    async (config: InternalAxiosRequestConfig) => {
+      const authStore = useAuthStore();
+
+      try {
+        // Get valid access token (will refresh if needed)
+        const token = await authStore.getValidAccessToken();
+        config.headers.Authorization = `Bearer ${token}`;
+      } catch (error) {
+        console.error('Failed to get access token:', error);
+        // Redirect to login if not authenticated
+        authStore.logout();
+        window.location.href = '/';
+        return Promise.reject(error);
+      }
+
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  /**
+   * Response Interceptor
+   * Handles errors and automatic token refresh on 401
+   */
+  client.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+
+      // If 401 Unauthorized and we haven't retried yet
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+
+        const authStore = useAuthStore();
+
+        try {
+          // Try to refresh the token
+          await authStore.refreshAccessToken();
+
+          // Retry the original request with new token
+          const token = await authStore.getValidAccessToken();
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+
+          return client(originalRequest);
+        } catch (refreshError) {
+          // If refresh fails, logout and redirect to home
+          console.error('Token refresh failed, logging out:', refreshError);
+          authStore.logout();
+          window.location.href = '/';
+          return Promise.reject(refreshError);
+        }
+      }
+
+      // Handle rate limiting (429)
+      if (error.response?.status === 429) {
+        const retryAfter = error.response.headers['retry-after'];
+        console.warn(`Rate limited. Retry after ${retryAfter} seconds`);
+      }
+
+      return Promise.reject(error);
+    }
+  );
+
+  return client;
+};
+
+// Export singleton instance
+export const spotifyApi = createSpotifyClient();
+
+/**
+ * Spotify API Helper Methods
+ */
+export const spotifyClient = {
+  /**
+   * Get current user's profile
+   */
+  getCurrentUser: () => spotifyApi.get('/me'),
+
+  /**
+   * Get user's playlists
+   */
+  getUserPlaylists: (limit = 20, offset = 0) =>
+    spotifyApi.get('/me/playlists', { params: { limit, offset } }),
+
+  /**
+   * Get user's saved tracks
+   */
+  getSavedTracks: (limit = 20, offset = 0) =>
+    spotifyApi.get('/me/tracks', { params: { limit, offset } }),
+
+  /**
+   * Get user's top artists
+   */
+  getTopArtists: (timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term', limit = 20) =>
+    spotifyApi.get('/me/top/artists', { params: { time_range: timeRange, limit } }),
+
+  /**
+   * Get user's top tracks
+   */
+  getTopTracks: (timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term', limit = 20) =>
+    spotifyApi.get('/me/top/tracks', { params: { time_range: timeRange, limit } }),
+
+  /**
+   * Get recently played tracks
+   */
+  getRecentlyPlayed: (limit = 20) =>
+    spotifyApi.get('/me/player/recently-played', { params: { limit } }),
+
+  /**
+   * Get current playback state
+   */
+  getCurrentPlayback: () => spotifyApi.get('/me/player'),
+
+  /**
+   * Get currently playing track
+   */
+  getCurrentlyPlaying: () => spotifyApi.get('/me/player/currently-playing'),
+
+  /**
+   * Play/Resume playback
+   */
+  play: (deviceId?: string) =>
+    spotifyApi.put('/me/player/play', {}, { params: deviceId ? { device_id: deviceId } : {} }),
+
+  /**
+   * Pause playback
+   */
+  pause: () => spotifyApi.put('/me/player/pause'),
+
+  /**
+   * Skip to next track
+   */
+  skipToNext: () => spotifyApi.post('/me/player/next'),
+
+  /**
+   * Skip to previous track
+   */
+  skipToPrevious: () => spotifyApi.post('/me/player/previous'),
+
+  /**
+   * Seek to position in currently playing track
+   */
+  seek: (positionMs: number) =>
+    spotifyApi.put('/me/player/seek', {}, { params: { position_ms: positionMs } }),
+
+  /**
+   * Set volume
+   */
+  setVolume: (volumePercent: number) =>
+    spotifyApi.put('/me/player/volume', {}, { params: { volume_percent: volumePercent } }),
+
+  /**
+   * Get a playlist
+   */
+  getPlaylist: (playlistId: string) => spotifyApi.get(`/playlists/${playlistId}`),
+
+  /**
+   * Search for items
+   */
+  search: (query: string, types: string[] = ['track', 'artist', 'album'], limit = 20) =>
+    spotifyApi.get('/search', {
+      params: {
+        q: query,
+        type: types.join(','),
+        limit,
+      },
+    }),
+
+  /**
+   * Get track audio features
+   */
+  getAudioFeatures: (trackId: string) => spotifyApi.get(`/audio-features/${trackId}`),
+
+  /**
+   * Get multiple tracks' audio features
+   */
+  getAudioFeaturesForTracks: (trackIds: string[]) =>
+    spotifyApi.get('/audio-features', { params: { ids: trackIds.join(',') } }),
+};

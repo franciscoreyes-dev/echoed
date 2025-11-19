@@ -59,194 +59,254 @@ const iconClass = computed(() => {
 
 <style scoped>
 .p-button {
+  --btn-bg: var(--bgColor-inset);
+  --btn-text: var(--fgColor-default);
+  --btn-border: var(--button-default-borderColor-rest);
+
+  font-family: inherit;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 7px 10px;
-  font-size: 1rem;
-  font-weight: 500;
+
+  padding: 0.625rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+
   border-radius: 6px;
-  border: 1px solid transparent;
+  border: 1px solid var(--btn-border);
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
   cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-  line-height: 1.5;
   user-select: none;
+
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .p-button-label {
   margin-bottom: 1px;
 }
 
+.p-button:focus-visible {
+  outline: 2px solid var(--btn-border);
+  outline-offset: 2px;
+}
+
+.p-button:hover:not(:disabled) {
+  filter: brightness(90%);
+}
+
 .p-button:disabled {
-  cursor: not-allowed;
   opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Sizes */
 .p-button-small {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
 }
 
 .p-button-large {
-  font-size: 1.125rem;
+  font-size: 1rem;
 }
 
-/* Primary - White text with dark background */
-.p-button-primary:not(.p-button-text):not(.p-button-outlined) {
-  background: var(--bgColor-emphasis, #3d444d);
-  color: var(--fgColor-default), #ffffff;
-  border-color: var(--bgColor-emphasis, #3d444d);
+/* =========================================
+ * Severity Classes
+ * =========================================
+ */
+.p-button-primary {
+  --btn-bg: var(--fgColor-default);
+  --btn-text: var(--bgColor-inset);
+  --btn-border: var(--fgColor-default);
 }
 
-.p-button-primary:not(.p-button-text):not(.p-button-outlined):hover:not(:disabled) {
-  background: var(--bgColor-neutral-emphasis, #656c76);
-  border-color: var(--bgColor-neutral-emphasis, #656c76);
+.p-button-secondary {
+  --btn-bg: var(--control-bgColor-rest);
+  --btn-text: var(--fgColor-default);
+  --btn-border: var(--control-bgColor-rest);
 }
 
-.p-button-primary:not(.p-button-text):not(.p-button-outlined):active:not(:disabled) {
-  background: var(--borderColor-emphasis, #656c76);
-  border-color: var(--borderColor-emphasis, #656c76);
-}
-
-/* Secondary - Dark text with light grey background */
-.p-button-secondary:not(.p-button-text):not(.p-button-outlined) {
-  background: var(--bgColor-muted, #f6f8fa);
-  color: var(--fgColor-default, #1f2328);
-  border-color: var(--borderColor-default, #d1d9e0);
-}
-
-.p-button-secondary:not(.p-button-text):not(.p-button-outlined):hover:not(:disabled) {
-  background: var(--bgColor-emphasis, #eaeef2);
-  border-color: var(--borderColor-emphasis, #8c959f);
-}
-
-/* Success */
 .p-button-success {
-  background: var(--bgColor-success-emphasis, #238636);
-  color: var(--fgColor-default, #ffffff);
-  border-color: var(--bgColor-success-emphasis, #238636);
+  --btn-bg: var(--color-ansi-green-bright);
+  --btn-text: var(--fgColor-onEmphasis);
+  --btn-border: var(--color-ansi-green-bright);
 }
 
-.p-button-success:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-/* Danger */
-.p-button-danger {
-  background: var(--bgColor-danger-emphasis, #da3633);
-  color: var(--fgColor-default, #ffffff);
-  border-color: var(--bgColor-danger-emphasis, #da3633);
-}
-
-.p-button-danger:hover:not(:disabled) {
-  background: var(--button-danger-bgColor-hover, #b62324);
-  border-color: var(--button-danger-bgColor-hover, #b62324);
-}
-
-/* Warning */
-.p-button-warning {
-  background: var(--bgColor-attention-emphasis, #9e6a03);
-  color: var(--fgColor-default, #ffffff);
-  border-color: var(--bgColor-attention-emphasis, #9e6a03);
-}
-
-.p-button-warning:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-/* Info */
 .p-button-info {
-  background: var(--bgColor-accent-emphasis, #1f6feb);
-  color: var(--fgColor-default, #ffffff);
-  border-color: var(--bgColor-accent-emphasis, #1f6feb);
+  --btn-bg: var(--data-blue-color-emphasis);
+  --btn-text: var(--fgColor-onEmphasis);
+  --btn-border: var(--data-blue-color-emphasis);
 }
 
-.p-button-info:hover:not(:disabled) {
-  opacity: 0.9;
+.p-button-warning {
+  --btn-bg: var(--progressBar-bgColor-severe);
+  --btn-text: var(--fgColor-onEmphasis);
+  --btn-border: var(--progressBar-bgColor-severe);
 }
 
-/* Outlined variant */
+.p-button-help {
+  --btn-bg: var(--data-purple-color-emphasis);
+  --btn-text: var(--fgColor-onEmphasis);
+  --btn-border: var(--data-purple-color-emphasis);
+}
+
+.p-button-danger {
+  --btn-bg: var(--display-red-scale-5);
+  --btn-text: var(--fgColor-onEmphasis);
+  --btn-border: var(--display-red-scale-5);
+}
+
+/* =========================================
+ * Variant Styles
+ * (These OVERRIDE the base styles)
+ * =========================================
+ */
+
+/* --- Outlined Variant --- */
 .p-button-outlined {
-  background: transparent;
+  background-color: transparent;
+  color: var(--btn-border);
   border-color: var(--borderColor-default);
 }
 
-.p-button-outlined.p-button-primary {
-  color: var(--fgColor-default);
-  border-color: var(--borderColor-emphasis);
-}
-
-.p-button-outlined.p-button-primary:hover:not(:disabled) {
-  background: var(--bgColor-muted);
-  border-color: var(--borderColor-emphasis);
+.p-button-outlined:hover:not(:disabled) {
+  filter: none;
+  background-color: var(--bgColor-inset);
 }
 
 .p-button-outlined.p-button-secondary {
+  background-color: transparent;
   color: var(--fgColor-muted);
   border-color: var(--borderColor-default);
 }
 
 .p-button-outlined.p-button-secondary:hover:not(:disabled) {
-  background: var(--bgColor-muted);
-  color: var(--fgColor-default);
-}
-
-.p-button-outlined.p-button-danger {
-  color: var(--bgColor-danger-emphasis);
-  border-color: var(--bgColor-danger-emphasis);
-}
-
-.p-button-outlined.p-button-danger:hover:not(:disabled) {
-  background: var(--bgColor-danger-muted);
-}
-
-/* Text variant - No background, only text */
-.p-button-text {
-  background: transparent;
-  border-color: transparent;
-}
-
-.p-button-text.p-button-primary {
-  color: var(--fgColor-default);
-}
-
-.p-button-text.p-button-secondary {
+  filter: none;
+  background-color: var(--bgColor-muted);
   color: var(--fgColor-muted);
 }
 
+.p-button-outlined.p-button-success {
+  background-color: transparent;
+  color: var(--color-ansi-green-bright);
+  border-color: var(--display-green-scale-2);
+}
+
+.p-button-outlined.p-button-success:hover:not(:disabled) {
+  filter: none;
+  background-color: rgb(from var(--display-green-scale-0) r g b / 0.4);
+}
+
+.p-button-outlined.p-button-info {
+  background-color: transparent;
+  color: var(--data-blue-color-emphasis);
+  border-color: var(--display-blue-scale-2);
+}
+
+.p-button-outlined.p-button-info:hover:not(:disabled) {
+  filter: none;
+  background-color: rgb(from var(--display-blue-scale-0) r g b / 0.4);
+}
+
+.p-button-outlined.p-button-warning {
+  background-color: transparent;
+  color: var(--progressBar-bgColor-severe);
+  border-color: var(--display-orange-scale-3);
+}
+
+.p-button-outlined.p-button-warning:hover:not(:disabled) {
+  filter: none;
+  background-color: rgb(from var(--display-orange-scale-0) r g b / 0.4);
+}
+
+.p-button-outlined.p-button-help {
+  background-color: transparent;
+  color: var(--data-purple-color-emphasis);
+  border-color: var(--display-purple-scale-2);
+}
+
+.p-button-outlined.p-button-help:hover:not(:disabled) {
+  filter: none;
+  background-color: rgb(from var(--display-purple-scale-0) r g b / 0.4);
+}
+
+.p-button-outlined.p-button-danger {
+  background-color: transparent;
+  color: var(--display-red-scale-5);
+  border-color: var(--display-red-scale-2);
+}
+
+.p-button-outlined.p-button-danger:hover:not(:disabled) {
+  filter: none;
+  background-color: rgb(from var(--display-red-scale-0) r g b / 0.4);
+}
+
+/* --- Text Variant --- */
+.p-button-text {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--btn-bg);
+}
+
 .p-button-text:hover:not(:disabled) {
-  background: var(--bgColor-muted);
+  filter: none;
+  background-color: rgba(from var(--btn-bg) r g b / 0.1);
+  color: var(--btn-bg);
 }
 
-/* Rounded - Applicable to all button types */
-.p-button-rounded {
-  border-radius: 50%;
+.p-button-text.p-button-primary {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--btn-bg);
 }
 
-.p-button-rounded.p-button-icon-only {
-  border-radius: 50%;
+.p-button-text.p-button-primary:hover:not(:disabled) {
+  filter: none;
+  background-color: var(--bgColor-inset);
+  color: var(--btn-bg);
 }
 
-/* Icon only - Always squared */
+.p-button-text.p-button-secondary {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--fgColor-muted);
+}
+
+.p-button-text.p-button-secondary:hover:not(:disabled) {
+  filter: none;
+  background-color: var(--bgColor-muted);
+  color: var(--fgColor-muted);
+}
+
+/* =========================================
+ * Icon & Label Styles
+ * =========================================
+ */
 .p-button-icon-only {
   padding: 10px;
-  width: 38px;
-  height: 38px;
+  aspect-ratio: 1 / 1;
   border-radius: 6px;
 }
 
+.p-button-icon-only .p-button-icon {
+  margin: 0;
+}
+
 .p-button-icon-only.p-button-small {
-  width: 38px;
-  height: 38px;
   padding: 8px;
 }
 
 .p-button-icon-only.p-button-large {
-  width: 3rem;
-  height: 3rem;
   padding: 12px;
+}
+
+/* Rounded - Applicable to all button types */
+.p-button-rounded {
+  border-radius: 9999px;
 }
 
 /* Loading */
