@@ -1,12 +1,48 @@
 <script setup lang="ts">
+import { onMounted, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { usePlayerStore } from '../stores/player';
+import { useLibraryStore } from '../stores/library';
 import BaseButton from '../components/BaseButton.vue';
+import DataCard from '../components/DataCard.vue';
+import TrackItem from '../components/TrackItem.vue';
+import ArtistItem from '../components/ArtistItem.vue';
 
 const authStore = useAuthStore();
+const playerStore = usePlayerStore();
+const libraryStore = useLibraryStore();
 
 const handleLogin = async () => {
   await authStore.login();
 };
+
+const loadUserData = async () => {
+  try {
+    await Promise.all([
+      playerStore.fetchRecentlyPlayed(10),
+      libraryStore.fetchAllLibraryData('medium_term'),
+    ]);
+  } catch (error) {
+    console.error('Failed to load user data:', error);
+  }
+};
+
+// Load data when authenticated
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    loadUserData();
+  }
+});
+
+// Watch for authentication changes
+watch(
+  () => authStore.isAuthenticated,
+  (isAuth) => {
+    if (isAuth) {
+      loadUserData();
+    }
+  }
+);
 </script>
 
 <template>
@@ -55,24 +91,84 @@ const handleLogin = async () => {
         <p class="subtitle">Here's your music overview</p>
       </div>
 
-      <div class="content-section">
-        <div class="placeholder-card">
-          <i class="pi pi-clock"></i>
-          <h2>Recently Played</h2>
-          <p>Your recently played tracks will appear here</p>
-        </div>
+      <!-- Loading State -->
+      <div v-if="playerStore.isLoading || libraryStore.isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your music data...</p>
+      </div>
 
-        <div class="placeholder-card">
-          <i class="pi pi-users"></i>
-          <h2>Top Artists</h2>
-          <p>Your most listened artists will appear here</p>
-        </div>
+      <!-- Content -->
+      <div v-else class="content-section">
+        <!-- Recently Played -->
+        <DataCard title="Recently Played" icon="pi-history">
+          <div v-if="playerStore.recentlyPlayed.length === 0" class="empty-state">
+            <p>No recently played tracks found</p>
+          </div>
+          <div v-else class="list-container">
+            <TrackItem
+              v-for="item in playerStore.recentlyPlayed.slice(0, 5)"
+              :key="item.played_at + item.track.id"
+              :image="item.track.album.images[item.track.album.images.length - 1]?.url"
+              :title="item.track.name"
+              :artists="item.track.artists.map((a) => a.name).join(', ')"
+              :album="item.track.album.name"
+              :duration="playerStore.formatDuration(item.track.duration_ms)"
+              :played-at="playerStore.formatPlayedAt(item.played_at)"
+            />
+          </div>
+        </DataCard>
 
-        <div class="placeholder-card">
-          <i class="pi pi-chart-line"></i>
-          <h2>Listening Stats</h2>
-          <p>Your listening statistics will be visualized here</p>
-        </div>
+        <!-- Top Artists -->
+        <DataCard title="Top Artists" icon="pi-users">
+          <div v-if="libraryStore.topArtists.length === 0" class="empty-state">
+            <p>No top artists found</p>
+          </div>
+          <div v-else class="list-container">
+            <ArtistItem
+              v-for="(artist, index) in libraryStore.topArtists.slice(0, 5)"
+              :key="artist.id"
+              :rank="index + 1"
+              :image="artist.images[artist.images.length - 1]?.url"
+              :name="artist.name"
+              :genres="artist.genres.slice(0, 2).join(', ')"
+              :followers="libraryStore.formatFollowers(artist.followers.total)"
+            />
+          </div>
+        </DataCard>
+
+        <!-- Listening Stats -->
+        <DataCard title="Listening Stats" icon="pi-chart-line">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value">{{ libraryStore.topArtists.length }}</div>
+              <div class="stat-label">Top Artists</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ libraryStore.topTracks.length }}</div>
+              <div class="stat-label">Top Tracks</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ libraryStore.totalUniqueGenres }}</div>
+              <div class="stat-label">Unique Genres</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ libraryStore.averagePopularity }}%</div>
+              <div class="stat-label">Avg Popularity</div>
+            </div>
+          </div>
+          <div v-if="libraryStore.topGenres.length > 0" class="top-genres">
+            <div class="genres-label">Top Genres:</div>
+            <div class="genres-list">
+              <span
+                v-for="genre in libraryStore.topGenres"
+                :key="genre"
+                class="genre-tag"
+              >
+                {{ genre }}
+              </span>
+            </div>
+          </div>
+        </DataCard>
       </div>
     </div>
   </div>
@@ -186,47 +282,113 @@ const handleLogin = async () => {
   margin: 0;
 }
 
-.content-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
   gap: 1.5rem;
 }
 
-.placeholder-card {
-  background: var(--bgColor-muted);
-  border: 1px solid var(--borderColor-default);
-  border-radius: 12px;
-  padding: 2rem;
-  min-height: 200px;
+.loading-state .spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--borderColor-default);
+  border-top-color: var(--button-primary-bgColor-rest);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-state p {
+  color: var(--fgColor-muted);
+  font-size: 1rem;
+}
+
+/* Content Section */
+.content-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.list-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  transition: all 0.3s;
   gap: 1rem;
 }
 
-.placeholder-card:hover {
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--fgColor-muted);
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--bgColor-default);
+  border-radius: 8px;
+  border: 1px solid var(--borderColor-default);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--button-primary-bgColor-rest);
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--fgColor-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Top Genres */
+.top-genres {
+  padding: 1rem;
+  background: var(--bgColor-default);
+  border-radius: 8px;
+  border: 1px solid var(--borderColor-default);
+}
+
+.genres-label {
+  font-weight: 600;
+  color: var(--fgColor-default);
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.genres-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.genre-tag {
+  padding: 0.5rem 1rem;
+  background: var(--bgColor-muted);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 16px;
+  font-size: 0.85rem;
+  color: var(--fgColor-default);
+  transition: all 0.2s;
+}
+
+.genre-tag:hover {
   background: var(--bgColor-emphasis);
   border-color: var(--borderColor-emphasis);
-  transform: translateY(-2px);
-}
-
-.placeholder-card i {
-  font-size: 2.5rem;
-  color: var(--button-primary-bgColor-rest);
-}
-
-.placeholder-card h2 {
-  font-size: 1.5rem;
-  margin: 0;
-  color: var(--fgColor-default);
-}
-
-.placeholder-card p {
-  color: var(--fgColor-muted);
-  margin: 0;
 }
 
 /* Responsive */

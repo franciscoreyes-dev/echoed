@@ -52,26 +52,29 @@ const userAvatar = computed(() => {
         <BaseButton
           icon="pi pi-home"
           label="Home"
-          :severity="isActive('home').value ? 'primary' : 'secondary'"
+          :severity="isActive('home').value ? 'success' : 'secondary'"
           @click="navigateTo('/')"
           size="small"
-          variant="text"
+          variant="outlined"
+          rounded
         />
         <BaseButton
           icon="pi pi-search"
           label="Search"
-          :severity="isActive('search').value ? 'primary' : 'secondary'"
+          :severity="isActive('search').value ? 'success' : 'secondary'"
           @click="navigateTo('/search')"
           size="small"
-          variant="text"
+          variant="outlined"
+          rounded
         />
         <BaseButton
           icon="pi pi-book"
           label="Library"
-          :severity="isActive('library').value ? 'primary' : 'secondary'"
+          :severity="isActive('library').value ? 'success' : 'secondary'"
           @click="navigateTo('/library')"
           size="small"
-          variant="text"
+          variant="outlined"
+          rounded
         />
       </nav>
 
@@ -79,16 +82,17 @@ const userAvatar = computed(() => {
         <BaseButton
           :icon="themeIcon"
           severity="secondary"
-          variant="outlined"
+          variant="text"
           @click="toggleTheme"
           :aria-label="`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} mode`"
+          rounded
         />
 
         <!-- Not authenticated - show login button -->
         <BaseButton
           v-if="!authStore.isAuthenticated"
           label="Connect to Spotify"
-          icon="pi pi-spotify"
+          icon="pi pi-link"
           severity="success"
           @click="handleLogin"
         />
@@ -117,6 +121,7 @@ const userAvatar = computed(() => {
             variant="text"
             @click="handleLogout"
             :aria-label="'Logout'"
+            rounded
           />
         </template>
       </div>
