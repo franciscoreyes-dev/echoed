@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { SpotifyUser, AuthState } from '../types/spotify';
+import type { SpotifyUser } from '../types/spotify';
 import {
   initiateSpotifyLogin,
   handleSpotifyCallback,

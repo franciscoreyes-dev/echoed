@@ -1,21 +1,111 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, watch, onMounted, onUnmounted } from 'vue';
+import { usePlayerStore } from '../stores/player';
+import { useAuthStore } from '../stores/auth';
 import BaseButton from './BaseButton.vue';
 
-const isPlaying = ref(false);
-const currentTime = ref(0);
-const duration = ref(180); // 3 minutes placeholder
-const volume = ref(70);
+const playerStore = usePlayerStore();
+const authStore = useAuthStore();
 
-const togglePlay = () => {
-  isPlaying.value = !isPlaying.value;
-};
+// Computed values from store
+const currentTrack = computed(() => playerStore.currentlyPlaying);
+const isPlaying = computed(() => playerStore.isPlaying);
+const progressMs = computed(() => playerStore.progressMs);
+const durationMs = computed(() => playerStore.durationMs);
+const volumePercent = computed({
+  get: () => playerStore.volumePercent,
+  set: (value: number) => handleVolumeChange(value),
+});
 
-const formatTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
+// Computed for track info display
+const trackName = computed(() => currentTrack.value?.name || 'No track playing');
+const artistNames = computed(() =>
+  currentTrack.value?.artists.map(a => a.name).join(', ') || 'Connect to Spotify'
+);
+const albumImage = computed(() =>
+  currentTrack.value?.album.images[0]?.url || null
+);
+
+// Computed for progress bar
+const progressPercent = computed(() =>
+  durationMs.value > 0 ? (progressMs.value / durationMs.value) * 100 : 0
+);
+
+// Format time in MM:SS
+const formatTime = (ms: number): string => {
+  const totalSeconds = Math.floor(ms / 1000);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
+
+// Playback controls
+const handlePlayPause = async () => {
+  try {
+    await playerStore.togglePlayPause();
+  } catch (err) {
+    console.error('Playback control failed:', err);
+  }
+};
+
+const handleNext = async () => {
+  try {
+    await playerStore.skipToNext();
+  } catch (err) {
+    console.error('Skip next failed:', err);
+  }
+};
+
+const handlePrevious = async () => {
+  try {
+    await playerStore.skipToPrevious();
+  } catch (err) {
+    console.error('Skip previous failed:', err);
+  }
+};
+
+const handleSeek = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const newPositionMs = parseInt(target.value);
+  try {
+    await playerStore.seek(newPositionMs);
+  } catch (err) {
+    console.error('Seek failed:', err);
+  }
+};
+
+const handleVolumeChange = async (value: number) => {
+  try {
+    await playerStore.setVolume(value);
+  } catch (err) {
+    console.error('Volume change failed:', err);
+  }
+};
+
+// Watch auth state and start/stop polling
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (isAuthenticated) {
+      playerStore.startPolling();
+    } else {
+      playerStore.stopPolling();
+    }
+  },
+  { immediate: true }
+);
+
+// Start polling on mount if authenticated
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    playerStore.startPolling();
+  }
+});
+
+// Stop polling on unmount
+onUnmounted(() => {
+  playerStore.stopPolling();
+});
 </script>
 
 <template>
@@ -24,11 +114,17 @@ const formatTime = (seconds: number) => {
       <!-- Track Info -->
       <div class="track-info">
         <div class="track-artwork">
-          <div class="artwork-placeholder">♪</div>
+          <img
+            v-if="albumImage"
+            :src="albumImage"
+            :alt="trackName"
+            class="artwork-image"
+          />
+          <div v-else class="artwork-placeholder">♪</div>
         </div>
         <div class="track-details">
-          <div class="track-name">No track playing</div>
-          <div class="track-artist">Connect to Spotify</div>
+          <div class="track-name">{{ trackName }}</div>
+          <div class="track-artist">{{ artistNames }}</div>
         </div>
       </div>
 
@@ -41,14 +137,17 @@ const formatTime = (seconds: number) => {
             rounded
             severity="secondary"
             aria-label="Previous"
+            @click="handlePrevious"
+            :disabled="!currentTrack"
           />
 
           <BaseButton
             :icon="isPlaying ? 'pi pi-pause' : 'pi pi-play'"
             rounded
             severity="primary"
-            @click="togglePlay"
+            @click="handlePlayPause"
             aria-label="Play/Pause"
+            :disabled="!currentTrack"
           />
 
           <BaseButton
@@ -57,49 +156,55 @@ const formatTime = (seconds: number) => {
             rounded
             severity="secondary"
             aria-label="Next"
+            @click="handleNext"
+            :disabled="!currentTrack"
           />
         </div>
 
         <!-- Progress Bar -->
         <div class="progress-container">
-          <span class="time-label">{{ formatTime(currentTime) }}</span>
+          <span class="time-label">{{ formatTime(progressMs) }}</span>
           <div class="progress-bar">
             <input
               type="range"
               min="0"
-              :max="duration"
-              v-model="currentTime"
+              :max="durationMs"
+              :value="progressMs"
+              @input="handleSeek"
               class="progress-slider"
+              :disabled="!currentTrack"
             />
             <div
               class="progress-fill"
-              :style="{ width: `${(currentTime / duration) * 100}%` }"
+              :style="{ width: `${progressPercent}%` }"
             ></div>
           </div>
-          <span class="time-label">{{ formatTime(duration) }}</span>
+          <span class="time-label">{{ formatTime(durationMs) }}</span>
         </div>
       </div>
 
       <!-- Volume Control -->
       <div class="volume-control">
         <BaseButton
-          icon="pi pi-volume-up"
+          :icon="volumePercent === 0 ? 'pi pi-volume-off' : volumePercent < 50 ? 'pi pi-volume-down' : 'pi pi-volume-up'"
           variant="text"
           severity="secondary"
           size="small"
           aria-label="Volume"
+          :disabled="!currentTrack"
         />
         <div class="volume-slider-container">
           <input
             type="range"
             min="0"
             max="100"
-            v-model="volume"
+            v-model="volumePercent"
             class="volume-slider"
+            :disabled="!currentTrack"
           />
           <div
             class="volume-fill"
-            :style="{ width: `${volume}%` }"
+            :style="{ width: `${volumePercent}%` }"
           ></div>
         </div>
       </div>
@@ -146,6 +251,12 @@ const formatTime = (seconds: number) => {
   border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.artwork-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .artwork-placeholder {
@@ -227,6 +338,10 @@ const formatTime = (seconds: number) => {
   z-index: 2;
 }
 
+.progress-slider:disabled {
+  cursor: not-allowed;
+}
+
 .progress-fill {
   height: 100%;
   background: var(--button-primary-bgColor-rest);
@@ -263,6 +378,10 @@ const formatTime = (seconds: number) => {
   opacity: 0;
   cursor: pointer;
   z-index: 2;
+}
+
+.volume-slider:disabled {
+  cursor: not-allowed;
 }
 
 .volume-fill {
