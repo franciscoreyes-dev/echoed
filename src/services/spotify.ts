@@ -116,6 +116,18 @@ export const spotifyClient = {
     spotifyApi.get('/me/tracks', { params: { limit, offset } }),
 
   /**
+   * Get user's saved tracks count (total only)
+   */
+  getSavedTracksCount: () =>
+    spotifyApi.get('/me/tracks', { params: { limit: 1 } }),
+
+  /**
+   * Get user's playlists count (total only)
+   */
+  getPlaylistsCount: () =>
+    spotifyApi.get('/me/playlists', { params: { limit: 1 } }),
+
+  /**
    * Get user's top artists
    */
   getTopArtists: (timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term', limit = 20) =>
