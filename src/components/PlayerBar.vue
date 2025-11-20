@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, onMounted, onUnmounted } from 'vue';
+import { computed, watch, onMounted, onUnmounted, ref } from 'vue';
 import { usePlayerStore } from '../stores/player';
 import { useAuthStore } from '../stores/auth';
 import BaseButton from './BaseButton.vue';
@@ -7,15 +7,30 @@ import BaseButton from './BaseButton.vue';
 const playerStore = usePlayerStore();
 const authStore = useAuthStore();
 
+// Local volume state for immediate UI feedback
+const localVolume = ref(50);
+const previousVolume = ref(50);
+const lastVolumeChangeTime = ref(0);
+const VOLUME_SYNC_DELAY = 2000; // Ignore store updates for 2 seconds after local change
+
 // Computed values from store
 const currentTrack = computed(() => playerStore.currentlyPlaying);
 const isPlaying = computed(() => playerStore.isPlaying);
 const progressMs = computed(() => playerStore.progressMs);
 const durationMs = computed(() => playerStore.durationMs);
-const volumePercent = computed({
-  get: () => playerStore.volumePercent,
-  set: (value: number) => handleVolumeChange(value),
-});
+
+// Sync local volume with store (but not immediately after local changes to prevent glitches)
+watch(
+  () => playerStore.volumePercent,
+  (newVolume) => {
+    const timeSinceLastChange = Date.now() - lastVolumeChangeTime.value;
+    // Only sync if we haven't made a local change recently
+    if (timeSinceLastChange > VOLUME_SYNC_DELAY) {
+      localVolume.value = newVolume;
+    }
+  },
+  { immediate: true }
+);
 
 // Computed for track info display
 const trackName = computed(() => currentTrack.value?.name || 'No track playing');
@@ -74,11 +89,39 @@ const handleSeek = async (event: Event) => {
   }
 };
 
-const handleVolumeChange = async (value: number) => {
+const handleVolumeChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const value = parseInt(target.value);
+
+  // Update local state immediately for smooth UI
+  localVolume.value = value;
+  lastVolumeChangeTime.value = Date.now(); // Prevent polling from overwriting
+
+  // Save previous volume for mute toggle (only if not muting)
+  if (value > 0) {
+    previousVolume.value = value;
+  }
+
   try {
     await playerStore.setVolume(value);
   } catch (err) {
     console.error('Volume change failed:', err);
+  }
+};
+
+const toggleMute = async () => {
+  const newVolume = localVolume.value === 0 ? previousVolume.value : 0;
+
+  // Update local state immediately
+  localVolume.value = newVolume;
+  lastVolumeChangeTime.value = Date.now(); // Prevent polling from overwriting
+
+  try {
+    await playerStore.setVolume(newVolume);
+  } catch (err) {
+    console.error('Mute toggle failed:', err);
+    // Revert on error
+    localVolume.value = localVolume.value === 0 ? previousVolume.value : 0;
   }
 };
 
@@ -133,7 +176,6 @@ onUnmounted(() => {
         <div class="control-buttons">
           <BaseButton
             icon="pi pi-step-backward"
-            variant="text"
             rounded
             severity="secondary"
             aria-label="Previous"
@@ -142,17 +184,18 @@ onUnmounted(() => {
           />
 
           <BaseButton
-            :icon="isPlaying ? 'pi pi-pause' : 'pi pi-play'"
-            rounded
-            severity="primary"
+            :icon="isPlaying ? 'pi pi-pause-circle' : 'pi pi-play-circle'"
             @click="handlePlayPause"
             aria-label="Play/Pause"
             :disabled="!currentTrack"
+            size="large"
+            variant="text"
+            severity="primary"
+            rounded
           />
 
           <BaseButton
             icon="pi pi-step-forward"
-            variant="text"
             rounded
             severity="secondary"
             aria-label="Next"
@@ -186,25 +229,27 @@ onUnmounted(() => {
       <!-- Volume Control -->
       <div class="volume-control">
         <BaseButton
-          :icon="volumePercent === 0 ? 'pi pi-volume-off' : volumePercent < 50 ? 'pi pi-volume-down' : 'pi pi-volume-up'"
+          :icon="localVolume === 0 ? 'pi pi-volume-off' : localVolume < 50 ? 'pi pi-volume-down' : 'pi pi-volume-up'"
           variant="text"
           severity="secondary"
           size="small"
           aria-label="Volume"
           :disabled="!currentTrack"
+          @click="toggleMute"
         />
         <div class="volume-slider-container">
           <input
             type="range"
             min="0"
             max="100"
-            v-model="volumePercent"
+            :value="localVolume"
+            @input="handleVolumeChange"
             class="volume-slider"
             :disabled="!currentTrack"
           />
           <div
             class="volume-fill"
-            :style="{ width: `${volumePercent}%` }"
+            :style="{ width: `${localVolume}%` }"
           ></div>
         </div>
       </div>
@@ -344,7 +389,7 @@ onUnmounted(() => {
 
 .progress-fill {
   height: 100%;
-  background: var(--button-primary-bgColor-rest);
+  background: var(--color-ansi-green-bright);
   border-radius: 2px;
   transition: width 0.1s linear;
   pointer-events: none;
@@ -386,14 +431,14 @@ onUnmounted(() => {
 
 .volume-fill {
   height: 100%;
-  background: var(--fgColor-muted);
+  background: var(--color-ansi-green-bright);
   border-radius: 2px;
   transition: width 0.1s linear;
   pointer-events: none;
 }
 
 .volume-slider-container:hover .volume-fill {
-  background: var(--button-primary-bgColor-rest);
+  background: var(--button-primary-bgColor-hover);
 }
 
 /* Responsive */
