@@ -27,6 +27,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Profile' }
   },
   {
+    path: '/statistics',
+    name: 'statistics',
+    component: () => import('../views/StatisticsView.vue'),
+    meta: { title: 'Statistics Deep Dive' }
+  },
+  {
     path: '/track/:id',
     name: 'track-detail',
     component: () => import('../views/TrackDetailView.vue'),

@@ -71,6 +71,15 @@ const userAvatar = computed(() => {
           variant="outlined"
           rounded
         />
+        <BaseButton
+          icon="pi pi-chart-bar"
+          label="Statistics"
+          :severity="isActive('statistics').value ? 'success' : 'secondary'"
+          @click="navigateTo('/statistics')"
+          size="small"
+          variant="outlined"
+          rounded
+        />
       </nav>
 
       <div class="user-section">

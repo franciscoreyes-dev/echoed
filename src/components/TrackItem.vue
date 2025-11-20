@@ -58,6 +58,7 @@ const handleInfoClick = (event: Event) => {
           @click="handleInfoClick"
           aria-label="Track info"
           class="info-btn"
+          rounded
         />
       </div>
       <div v-if="album || duration || playedAt" class="track-meta">
@@ -111,6 +112,7 @@ const handleInfoClick = (event: Event) => {
 .track-name-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
 }
 

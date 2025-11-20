@@ -194,6 +194,11 @@ export const spotifyClient = {
     }),
 
   /**
+   * Get a track by ID
+   */
+  getTrack: (trackId: string) => spotifyApi.get(`/tracks/${trackId}`),
+
+  /**
    * Get track audio features
    */
   getAudioFeatures: (trackId: string) => spotifyApi.get(`/audio-features/${trackId}`),

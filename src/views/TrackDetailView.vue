@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import type { AudioFeatures, SpotifyTrack } from '../types/spotify';
-import { spotifyClient, spotifyApi } from '../services/spotify';
+import type { SpotifyTrack } from '../types/spotify';
+import { spotifyClient } from '../services/spotify';
 import { apiCache } from '../utils/cache';
 import { usePlayerStore } from '../stores/player';
 import BaseButton from '../components/BaseButton.vue';
@@ -12,18 +12,8 @@ const router = useRouter();
 const playerStore = usePlayerStore();
 
 const track = ref<SpotifyTrack | null>(null);
-const audioFeatures = ref<AudioFeatures | null>(null);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
-
-const keyNames = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
-
-const musicalKey = computed(() => {
-  if (!audioFeatures.value) return '-';
-  const key = keyNames[audioFeatures.value.key] || 'Unknown';
-  const mode = audioFeatures.value.mode === 1 ? 'Major' : 'Minor';
-  return `${key} ${mode}`;
-});
 
 const fetchTrackData = async () => {
   const trackId = route.params.id as string;
@@ -33,36 +23,19 @@ const fetchTrackData = async () => {
     return;
   }
 
-  // Check cache for track
-  const trackCacheKey = `track-${trackId}`;
-  const cachedTrack = apiCache.get<SpotifyTrack>(trackCacheKey);
-  if (cachedTrack) {
-    track.value = cachedTrack;
-  }
+  const cacheKey = `track-${trackId}`;
+  const cached = apiCache.get<SpotifyTrack>(cacheKey);
 
-  // Check cache for audio features
-  const featuresCacheKey = `audio-features-${trackId}`;
-  const cachedFeatures = apiCache.get<AudioFeatures>(featuresCacheKey);
-  if (cachedFeatures) {
-    audioFeatures.value = cachedFeatures;
-  }
-
-  if (cachedTrack && cachedFeatures) {
+  if (cached) {
+    track.value = cached;
     isLoading.value = false;
     return;
   }
 
   try {
-    const [trackResponse, featuresResponse] = await Promise.all([
-      cachedTrack ? Promise.resolve({ data: cachedTrack }) : spotifyApi.get(`/tracks/${trackId}`),
-      cachedFeatures ? Promise.resolve({ data: cachedFeatures }) : spotifyClient.getAudioFeatures(trackId)
-    ]);
-
-    track.value = trackResponse.data;
-    audioFeatures.value = featuresResponse.data;
-
-    apiCache.set(trackCacheKey, trackResponse.data, 300000); // 5 min
-    apiCache.set(featuresCacheKey, featuresResponse.data, 300000); // 5 min
+    const response = await spotifyClient.getTrack(trackId);
+    track.value = response.data;
+    apiCache.set(cacheKey, response.data, 300000); // 5 min
   } catch (err) {
     console.error('Failed to fetch track data:', err);
     error.value = 'Failed to load track details';
@@ -71,10 +44,14 @@ const fetchTrackData = async () => {
   }
 };
 
-const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
-
 const goBack = () => {
   router.back();
+};
+
+const formatReleaseDate = (date: string) => {
+  if (!date) return 'Unknown';
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
 onMounted(() => {
@@ -124,7 +101,9 @@ onMounted(() => {
           <h1>{{ track.name }}</h1>
           <p class="artists">{{ track.artists.map(a => a.name).join(', ') }}</p>
           <p class="album">{{ track.album.name }}</p>
-          <p class="duration">{{ playerStore.formatDuration(track.duration_ms) }}</p>
+          <div class="track-badges">
+            <span v-if="track.explicit" class="badge explicit">Explicit</span>
+          </div>
           <a
             :href="track.external_urls.spotify"
             target="_blank"
@@ -137,77 +116,55 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="audioFeatures" class="audio-features">
-        <h2>Audio Features</h2>
+      <div class="track-info-section">
+        <h2>Track Information</h2>
 
-        <div class="features-grid">
-          <div class="feature">
-            <span class="label">Tempo</span>
-            <span class="value">{{ Math.round(audioFeatures.tempo) }} BPM</span>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Duration</span>
+            <span class="value">{{ playerStore.formatDuration(track.duration_ms) }}</span>
           </div>
-          <div class="feature">
-            <span class="label">Key</span>
-            <span class="value">{{ musicalKey }}</span>
+          <div class="info-item">
+            <span class="label">Popularity</span>
+            <div class="popularity-container">
+              <div class="popularity-bar">
+                <div class="popularity-fill" :style="{ width: `${track.popularity || 0}%` }"></div>
+              </div>
+              <span class="popularity-value">{{ track.popularity || 0 }}/100</span>
+            </div>
           </div>
-          <div class="feature">
-            <span class="label">Time Signature</span>
-            <span class="value">{{ audioFeatures.time_signature }}/4</span>
+          <div class="info-item">
+            <span class="label">Album</span>
+            <span class="value">{{ track.album.name }}</span>
           </div>
-          <div class="feature">
-            <span class="label">Loudness</span>
-            <span class="value">{{ audioFeatures.loudness.toFixed(1) }} dB</span>
+          <div class="info-item">
+            <span class="label">Release Date</span>
+            <span class="value">{{ formatReleaseDate(track.album.release_date || '') }}</span>
+          </div>
+          <div class="info-item" v-if="track.track_number">
+            <span class="label">Track Number</span>
+            <span class="value">{{ track.track_number }}</span>
+          </div>
+          <div class="info-item" v-if="track.disc_number && track.disc_number > 1">
+            <span class="label">Disc Number</span>
+            <span class="value">{{ track.disc_number }}</span>
           </div>
         </div>
 
-        <div class="feature-bars">
-          <div class="bar-item">
-            <span class="bar-label">Energy</span>
-            <div class="bar-container">
-              <div class="bar-fill" :style="{ width: formatPercent(audioFeatures.energy) }"></div>
-            </div>
-            <span class="bar-value">{{ formatPercent(audioFeatures.energy) }}</span>
-          </div>
-          <div class="bar-item">
-            <span class="bar-label">Danceability</span>
-            <div class="bar-container">
-              <div class="bar-fill" :style="{ width: formatPercent(audioFeatures.danceability) }"></div>
-            </div>
-            <span class="bar-value">{{ formatPercent(audioFeatures.danceability) }}</span>
-          </div>
-          <div class="bar-item">
-            <span class="bar-label">Valence</span>
-            <div class="bar-container">
-              <div class="bar-fill" :style="{ width: formatPercent(audioFeatures.valence) }"></div>
-            </div>
-            <span class="bar-value">{{ formatPercent(audioFeatures.valence) }}</span>
-          </div>
-          <div class="bar-item">
-            <span class="bar-label">Acousticness</span>
-            <div class="bar-container">
-              <div class="bar-fill" :style="{ width: formatPercent(audioFeatures.acousticness) }"></div>
-            </div>
-            <span class="bar-value">{{ formatPercent(audioFeatures.acousticness) }}</span>
-          </div>
-          <div class="bar-item">
-            <span class="bar-label">Instrumentalness</span>
-            <div class="bar-container">
-              <div class="bar-fill" :style="{ width: formatPercent(audioFeatures.instrumentalness) }"></div>
-            </div>
-            <span class="bar-value">{{ formatPercent(audioFeatures.instrumentalness) }}</span>
-          </div>
-          <div class="bar-item">
-            <span class="bar-label">Liveness</span>
-            <div class="bar-container">
-              <div class="bar-fill" :style="{ width: formatPercent(audioFeatures.liveness) }"></div>
-            </div>
-            <span class="bar-value">{{ formatPercent(audioFeatures.liveness) }}</span>
-          </div>
-          <div class="bar-item">
-            <span class="bar-label">Speechiness</span>
-            <div class="bar-container">
-              <div class="bar-fill" :style="{ width: formatPercent(audioFeatures.speechiness) }"></div>
-            </div>
-            <span class="bar-value">{{ formatPercent(audioFeatures.speechiness) }}</span>
+        <div class="artists-section">
+          <h3>Artists</h3>
+          <div class="artists-list">
+            <a
+              v-for="artist in track.artists"
+              :key="artist.id"
+              :href="artist.external_urls.spotify"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="artist-link"
+            >
+              {{ artist.name }}
+              <i class="pi pi-external-link"></i>
+            </a>
           </div>
         </div>
       </div>
@@ -294,14 +251,27 @@ onMounted(() => {
 }
 
 .track-main-info .album {
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.75rem 0;
   color: var(--fgColor-muted);
 }
 
-.track-main-info .duration {
-  margin: 0 0 1rem 0;
-  color: var(--fgColor-muted);
-  font-size: 0.9rem;
+.track-badges {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.explicit {
+  background: var(--fgColor-muted);
+  color: var(--bgColor-default);
 }
 
 .spotify-link {
@@ -323,84 +293,113 @@ onMounted(() => {
   transform: scale(1.02);
 }
 
-.audio-features {
+.track-info-section {
   background: var(--bgColor-muted);
   border-radius: 12px;
   padding: 1.5rem;
   border: 1px solid var(--borderColor-default);
 }
 
-.audio-features h2 {
+.track-info-section h2 {
   margin: 0 0 1.5rem 0;
   font-size: 1.25rem;
   color: var(--fgColor-default);
 }
 
-.features-grid {
+.info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
-.feature {
+.info-item {
   background: var(--bgColor-default);
   padding: 1rem;
   border-radius: 8px;
   border: 1px solid var(--borderColor-default);
 }
 
-.feature .label {
+.info-item .label {
   display: block;
   font-size: 0.75rem;
   color: var(--fgColor-muted);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.feature .value {
+.info-item .value {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--fgColor-default);
 }
 
-.feature-bars {
+.popularity-container {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.bar-item {
-  display: grid;
-  grid-template-columns: 120px 1fr 60px;
-  gap: 1rem;
   align-items: center;
+  gap: 0.75rem;
 }
 
-.bar-label {
-  font-size: 0.9rem;
-  color: var(--fgColor-muted);
-}
-
-.bar-container {
-  height: 10px;
-  background: var(--bgColor-default);
-  border-radius: 5px;
+.popularity-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--borderColor-default);
+  border-radius: 4px;
   overflow: hidden;
 }
 
-.bar-fill {
+.popularity-fill {
   height: 100%;
   background: var(--color-ansi-green);
-  border-radius: 5px;
+  border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-.bar-value {
+.popularity-value {
   font-size: 0.85rem;
   color: var(--fgColor-muted);
-  text-align: right;
+  white-space: nowrap;
+}
+
+.artists-section {
+  border-top: 1px solid var(--borderColor-default);
+  padding-top: 1.5rem;
+}
+
+.artists-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: var(--fgColor-default);
+}
+
+.artists-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.artist-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 20px;
+  color: var(--fgColor-default);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.artist-link:hover {
+  border-color: var(--color-ansi-green);
+  color: var(--color-ansi-green);
+}
+
+.artist-link i {
+  font-size: 0.75rem;
 }
 
 @media (max-width: 600px) {
@@ -419,13 +418,12 @@ onMounted(() => {
     align-items: center;
   }
 
-  .features-grid {
-    grid-template-columns: 1fr;
+  .track-badges {
+    justify-content: center;
   }
 
-  .bar-item {
-    grid-template-columns: 100px 1fr 50px;
-    gap: 0.5rem;
+  .info-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
