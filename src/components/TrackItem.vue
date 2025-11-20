@@ -95,8 +95,8 @@ const handleInfoClick = (event: Event) => {
 }
 
 .track-image {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 4px;
   object-fit: cover;
   flex-shrink: 0;
@@ -107,6 +107,7 @@ const handleInfoClick = (event: Event) => {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 5px;
 }
 
 .track-name-row {
@@ -125,6 +126,10 @@ const handleInfoClick = (event: Event) => {
 
 .info-btn {
   flex-shrink: 0;
+}
+
+.track-item.has-color .info-btn:hover {
+  background: rgb(from var(--hover-bg) r g b / 0.1) !important;
 }
 
 .track-artist {

@@ -6,6 +6,13 @@ import { spotifyClient } from '../services/spotify';
 import { apiCache } from '../utils/cache';
 import { usePlayerStore } from '../stores/player';
 import BaseButton from '../components/BaseButton.vue';
+import DataCard from '../components/DataCard.vue';
+
+const openInSpotify = () => {
+  if (track.value?.external_urls.spotify) {
+    window.open(track.value.external_urls.spotify, '_blank');
+  }
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -98,27 +105,22 @@ onMounted(() => {
           class="album-cover"
         />
         <div class="track-main-info">
-          <h1>{{ track.name }}</h1>
+          <div class="title-row">
+            <h1>{{ track.name }}</h1>
+            <span v-if="track.explicit" class="badge explicit">EXPLICIT</span>
+          </div>
           <p class="artists">{{ track.artists.map(a => a.name).join(', ') }}</p>
           <p class="album">{{ track.album.name }}</p>
-          <div class="track-badges">
-            <span v-if="track.explicit" class="badge explicit">Explicit</span>
-          </div>
-          <a
-            :href="track.external_urls.spotify"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="spotify-link"
-          >
-            <i class="pi pi-external-link"></i>
-            Open in Spotify
-          </a>
+          <BaseButton
+            icon="pi pi-external-link"
+            label="Open in Spotify"
+            severity="success"
+            @click="openInSpotify"
+          />
         </div>
       </div>
 
-      <div class="track-info-section">
-        <h2>Track Information</h2>
-
+      <DataCard title="Track Information" icon="pi-info-circle">
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Duration</span>
@@ -150,24 +152,23 @@ onMounted(() => {
             <span class="value">{{ track.disc_number }}</span>
           </div>
         </div>
+      </DataCard>
 
-        <div class="artists-section">
-          <h3>Artists</h3>
-          <div class="artists-list">
-            <a
-              v-for="artist in track.artists"
-              :key="artist.id"
-              :href="artist.external_urls.spotify"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="artist-link"
-            >
-              {{ artist.name }}
-              <i class="pi pi-external-link"></i>
-            </a>
-          </div>
+      <DataCard title="Artists" icon="pi-users">
+        <div class="artists-list">
+          <a
+            v-for="artist in track.artists"
+            :key="artist.id"
+            :href="artist.external_urls.spotify"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="artist-link"
+          >
+            {{ artist.name }}
+            <i class="pi pi-external-link"></i>
+          </a>
         </div>
-      </div>
+      </DataCard>
     </div>
   </div>
 </template>
@@ -175,7 +176,7 @@ onMounted(() => {
 <style scoped>
 .view-container {
   padding: 2rem;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -228,24 +229,45 @@ onMounted(() => {
   height: 200px;
   border-radius: 8px;
   object-fit: cover;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .track-main-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .track-main-info h1 {
   margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+  font-size: 3rem;
   color: var(--fgColor-default);
 }
 
+.badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Geist Mono', monospace;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.badge.explicit {
+  background: var(--fgColor-muted);
+  color: var(--bgColor-default);
+}
+
 .track-main-info .artists {
-  margin: 0 0 0.25rem 0;
+  margin: auto 0 0.25rem 0;
   color: var(--fgColor-muted);
   font-size: 1.1rem;
 }
@@ -255,62 +277,20 @@ onMounted(() => {
   color: var(--fgColor-muted);
 }
 
-.track-badges {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.badge.explicit {
-  background: var(--fgColor-muted);
-  color: var(--bgColor-default);
-}
-
-.spotify-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: #1DB954;
-  color: white;
-  border-radius: 20px;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+.track-main-info :deep(.p-button) {
   width: fit-content;
 }
 
-.spotify-link:hover {
-  background: #1ed760;
-  transform: scale(1.02);
-}
-
-.track-info-section {
-  background: var(--bgColor-muted);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid var(--borderColor-default);
-}
-
-.track-info-section h2 {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.25rem;
-  color: var(--fgColor-default);
+.track-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-  margin-bottom: 1.5rem;
 }
 
 .info-item {
@@ -360,17 +340,6 @@ onMounted(() => {
   font-size: 0.85rem;
   color: var(--fgColor-muted);
   white-space: nowrap;
-}
-
-.artists-section {
-  border-top: 1px solid var(--borderColor-default);
-  padding-top: 1.5rem;
-}
-
-.artists-section h3 {
-  margin: 0 0 1rem 0;
-  font-size: 1rem;
-  color: var(--fgColor-default);
 }
 
 .artists-list {

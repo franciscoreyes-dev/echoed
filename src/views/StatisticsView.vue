@@ -34,6 +34,40 @@ const { currentTheme } = useTheme();
 const selectedTimeRange = ref<TimeRange>('medium_term');
 const isLoading = ref(false);
 
+// Fullscreen chart state
+type ChartType = 'genrePie' | 'genreBar' | 'popularityBar' | 'popularityTrend' | null;
+const expandedChart = ref<ChartType>(null);
+
+const expandChart = (chart: ChartType) => {
+  expandedChart.value = chart;
+  document.body.style.overflow = 'hidden';
+};
+
+const closeExpand = () => {
+  expandedChart.value = null;
+  document.body.style.overflow = '';
+};
+
+const getExpandedChartOptions = computed(() => {
+  switch (expandedChart.value) {
+    case 'genrePie': return genrePieOptions.value;
+    case 'genreBar': return genreBarOptions.value;
+    case 'popularityBar': return popularityBarOptions.value;
+    case 'popularityTrend': return popularityTrendOptions.value;
+    default: return null;
+  }
+});
+
+const getExpandedChartTitle = computed(() => {
+  switch (expandedChart.value) {
+    case 'genrePie': return 'Genre Distribution';
+    case 'genreBar': return 'Top Genres';
+    case 'popularityBar': return 'Track Popularity Distribution';
+    case 'popularityTrend': return 'Track Popularity Trend';
+    default: return '';
+  }
+});
+
 // Theme-aware colors
 const textColor = computed(() => currentTheme.value === 'dark' ? '#e6edf3' : '#1f2328');
 const mutedColor = computed(() => currentTheme.value === 'dark' ? '#7d8590' : '#656d76');
@@ -265,6 +299,7 @@ const popularityTrendOptions = computed(() => ({
       color: textColor.value
     },
     formatter: (params: { dataIndex: number; value: number }[]) => {
+      if (!params[0]) return '';
       const idx = params[0].dataIndex;
       const track = libraryStore.topTracks[idx];
       if (track) {
@@ -412,6 +447,16 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
       <div class="charts-grid">
         <!-- Genre Pie Chart -->
         <DataCard title="Genre Distribution" icon="pi-chart-pie">
+          <template #header-actions>
+            <BaseButton
+              icon="pi pi-expand"
+              variant="text"
+              severity="secondary"
+              size="small"
+              @click="expandChart('genrePie')"
+              :disabled="genreData.length === 0"
+            />
+          </template>
           <div class="chart-container">
             <v-chart
               v-if="genreData.length > 0"
@@ -425,6 +470,16 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
 
         <!-- Genre Bar Chart -->
         <DataCard title="Top Genres" icon="pi-align-left">
+          <template #header-actions>
+            <BaseButton
+              icon="pi pi-expand"
+              variant="text"
+              severity="secondary"
+              size="small"
+              @click="expandChart('genreBar')"
+              :disabled="genreData.length === 0"
+            />
+          </template>
           <div class="chart-container">
             <v-chart
               v-if="genreData.length > 0"
@@ -438,6 +493,16 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
 
         <!-- Popularity Distribution -->
         <DataCard title="Track Popularity Distribution" icon="pi-star" class="full-width">
+          <template #header-actions>
+            <BaseButton
+              icon="pi pi-expand"
+              variant="text"
+              severity="secondary"
+              size="small"
+              @click="expandChart('popularityBar')"
+              :disabled="totalTracks === 0"
+            />
+          </template>
           <div class="chart-container">
             <v-chart
               v-if="totalTracks > 0"
@@ -451,6 +516,16 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
 
         <!-- Popularity Trend -->
         <DataCard title="Track Popularity Trend" icon="pi-chart-line" class="full-width">
+          <template #header-actions>
+            <BaseButton
+              icon="pi pi-expand"
+              variant="text"
+              severity="secondary"
+              size="small"
+              @click="expandChart('popularityTrend')"
+              :disabled="totalTracks === 0"
+            />
+          </template>
           <div class="chart-container">
             <v-chart
               v-if="totalTracks > 0"
@@ -462,6 +537,31 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
           </div>
         </DataCard>
       </div>
+
+      <!-- Fullscreen Chart Modal -->
+      <Teleport to="body">
+        <div v-if="expandedChart" class="fullscreen-overlay" @click.self="closeExpand">
+          <div class="fullscreen-chart-container">
+            <div class="fullscreen-header">
+              <h2>{{ getExpandedChartTitle }}</h2>
+              <BaseButton
+                icon="pi pi-times"
+                variant="text"
+                severity="secondary"
+                @click="closeExpand"
+              />
+            </div>
+            <div class="fullscreen-chart">
+              <v-chart
+                v-if="getExpandedChartOptions"
+                :option="getExpandedChartOptions"
+                autoresize
+                class="chart"
+              />
+            </div>
+          </div>
+        </div>
+      </Teleport>
 
       <!-- Top Genres List -->
       <DataCard title="Your Top Genres" icon="pi-tags">
@@ -644,5 +744,59 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
   .chart-card.full-width {
     grid-column: 1;
   }
+}
+</style>
+
+<style>
+/* Fullscreen overlay styles (unscoped for Teleport) */
+.fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.fullscreen-chart-container {
+  background: var(--bgColor-default);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 1200px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fullscreen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--borderColor-default);
+}
+
+.fullscreen-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--fgColor-default);
+}
+
+.fullscreen-chart {
+  flex: 1;
+  padding: 1.5rem;
+  min-height: 0;
+}
+
+.fullscreen-chart .chart {
+  width: 100%;
+  height: 100%;
 }
 </style>

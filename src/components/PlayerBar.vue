@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, watch, onMounted, onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { usePlayerStore } from '../stores/player';
 import { useAuthStore } from '../stores/auth';
 import BaseButton from './BaseButton.vue';
 
+const router = useRouter();
 const playerStore = usePlayerStore();
 const authStore = useAuthStore();
 
@@ -40,6 +42,14 @@ const artistNames = computed(() =>
 const albumImage = computed(() =>
   currentTrack.value?.album.images[0]?.url || null
 );
+
+const trackId = computed(() => currentTrack.value?.id || null);
+
+const navigateToTrack = () => {
+  if (trackId.value) {
+    router.push(`/track/${trackId.value}`);
+  }
+};
 
 // Computed for progress bar
 const progressPercent = computed(() =>
@@ -156,7 +166,11 @@ onUnmounted(() => {
     <div class="player-container">
       <!-- Track Info -->
       <div class="track-info">
-        <div class="track-artwork">
+        <div
+          class="track-artwork"
+          :class="{ clickable: trackId }"
+          @click="navigateToTrack"
+        >
           <img
             v-if="albumImage"
             :src="albumImage"
@@ -264,7 +278,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   height: 90px;
-  background: var(--bgColor-muted);
+  background: var(--bgColor-default);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--borderColor-default);
   z-index: 100;
@@ -296,6 +310,16 @@ onUnmounted(() => {
   border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.track-artwork.clickable {
+  cursor: pointer;
+}
+
+.track-artwork.clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .artwork-image {

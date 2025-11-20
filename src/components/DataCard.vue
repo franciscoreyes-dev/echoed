@@ -10,8 +10,13 @@ defineProps<Props>();
 <template>
   <div class="data-card">
     <div class="card-header">
-      <i v-if="icon" :class="['pi', icon]"></i>
-      <h2>{{ title }}</h2>
+      <div class="header-left">
+        <i v-if="icon" :class="['pi', icon]"></i>
+        <h2>{{ title }}</h2>
+      </div>
+      <div class="header-actions">
+        <slot name="header-actions" />
+      </div>
     </div>
     <div class="card-content">
       <slot />
@@ -30,21 +35,33 @@ defineProps<Props>();
 .card-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
   padding: 10px 20px;
   background: var(--bgColor-muted);
 }
 
-.card-header i {
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-left i {
   font-size: 0.875rem;
   color: var(--color-ansi-green-bright);
 }
 
-.card-header h2 {
+.header-left h2 {
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
   color: var(--fgColor-default);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .card-content {
