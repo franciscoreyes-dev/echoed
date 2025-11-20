@@ -88,10 +88,32 @@ export interface SpotifyTrack {
     external_urls: {
       spotify: string;
     };
+    release_date?: string;
   };
   duration_ms: number;
   external_urls: {
     spotify: string;
   };
   uri: string;
+  popularity?: number;
+  explicit?: boolean;
+  track_number?: number;
+  disc_number?: number;
+}
+
+export interface AudioFeatures {
+  id: string;
+  danceability: number;
+  energy: number;
+  key: number;
+  loudness: number;
+  mode: number;
+  speechiness: number;
+  acousticness: number;
+  instrumentalness: number;
+  liveness: number;
+  valence: number;
+  tempo: number;
+  duration_ms: number;
+  time_signature: number;
 }

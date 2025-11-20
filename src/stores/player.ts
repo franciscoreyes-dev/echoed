@@ -8,6 +8,7 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 import { spotifyClient } from '../services/spotify';
 import type { SpotifyPlaybackState, SpotifyTrack } from '../types/spotify';
+import { apiCache } from '../utils/cache';
 
 export interface Track {
   id: string;
@@ -63,18 +64,33 @@ export const usePlayerStore = defineStore('player', () => {
    * Fetch recently played tracks
    */
   const fetchRecentlyPlayed = async (limit: number = 20): Promise<void> => {
-    isLoading.value = true;
+    const cacheKey = `recently-played-${limit}`;
+    const cached = apiCache.get<RecentlyPlayedItem[]>(cacheKey);
+
+    if (cached) {
+      recentlyPlayed.value = cached;
+      return;
+    }
+
+    // Only show loading on initial load
+    const isInitialLoad = recentlyPlayed.value.length === 0;
+    if (isInitialLoad) {
+      isLoading.value = true;
+    }
     error.value = null;
 
     try {
       const response = await spotifyClient.getRecentlyPlayed(limit);
       recentlyPlayed.value = response.data.items;
+      apiCache.set(cacheKey, response.data.items, 10000); // Cache for 10 seconds
     } catch (err) {
       console.error('Failed to fetch recently played tracks:', err);
       error.value = err instanceof Error ? err.message : 'Failed to fetch recently played tracks';
       throw err;
     } finally {
-      isLoading.value = false;
+      if (isInitialLoad) {
+        isLoading.value = false;
+      }
     }
   };
 

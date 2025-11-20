@@ -301,8 +301,8 @@ const iconClass = computed(() => {
 }
 
 .p-button-icon-only.p-button-large {
-  font-size: 2.5rem;
-  padding: 0;
+  font-size: 2.1rem;
+  padding: 5px;
 }
 
 /* Rounded - Applicable to all button types */

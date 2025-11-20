@@ -25,11 +25,6 @@ const handleLogin = async () => {
   await authStore.login();
 };
 
-const handleLogout = () => {
-  authStore.logout();
-  router.push('/');
-};
-
 const userAvatar = computed(() => {
   if (!authStore.user?.images || authStore.user.images.length === 0) {
     return null;
@@ -97,7 +92,7 @@ const userAvatar = computed(() => {
           @click="handleLogin"
         />
 
-        <!-- Authenticated - show user avatar and logout -->
+        <!-- Authenticated - show user avatar -->
         <template v-else>
           <Avatar
             v-if="userAvatar"
@@ -114,14 +109,6 @@ const userAvatar = computed(() => {
             @click="navigateTo('/profile')"
             class="profile-avatar"
             :class="{ active: isActive('profile').value }"
-          />
-          <BaseButton
-            icon="pi pi-sign-out"
-            severity="danger"
-            variant="text"
-            @click="handleLogout"
-            :aria-label="'Logout'"
-            rounded
           />
         </template>
       </div>
@@ -221,7 +208,7 @@ const userAvatar = computed(() => {
 
 .profile-avatar.active {
   opacity: 1;
-  border-color: var(--button-primary-bgColor-rest);
+  border-color: var(--color-ansi-green-bright);
   color: var(--button-primary-bgColor-rest);
   transform: scale(1.08);
   box-shadow: 0 0 0 3px var(--button-primary-bgColor-rest, #238636)33;

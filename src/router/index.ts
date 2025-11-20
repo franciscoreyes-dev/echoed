@@ -27,6 +27,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Profile' }
   },
   {
+    path: '/track/:id',
+    name: 'track-detail',
+    component: () => import('../views/TrackDetailView.vue'),
+    meta: { title: 'Track Details' }
+  },
+  {
     path: '/callback',
     name: 'callback',
     component: () => import('../views/CallbackView.vue'),

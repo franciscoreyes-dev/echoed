@@ -26,9 +26,10 @@ onMounted(async () => {
 
 <style scoped>
 .app-layout {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .main-content {
@@ -36,5 +37,6 @@ onMounted(async () => {
   margin-top: 64px; /* Header height */
   margin-bottom: 90px; /* Player bar height */
   overflow-y: auto;
+  overflow-x: hidden;
 }
 </style>

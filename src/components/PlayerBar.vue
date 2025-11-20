@@ -190,7 +190,7 @@ onUnmounted(() => {
             :disabled="!currentTrack"
             size="large"
             variant="text"
-            severity="primary"
+            severity="success"
             rounded
           />
 

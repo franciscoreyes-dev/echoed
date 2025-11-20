@@ -21,10 +21,10 @@ defineProps<Props>();
 
 <style scoped>
 .data-card {
-  border: 1px solid var(--borderColor-default);
   border-radius: 10px;
   overflow: hidden;
   transition: all 0.3s;
+  background: var(--bgColor-muted);
 }
 
 .card-header {
@@ -32,7 +32,6 @@ defineProps<Props>();
   align-items: center;
   gap: 0.75rem;
   padding: 10px 20px;
-  border-bottom: 1px solid var(--borderColor-default);
   background: var(--bgColor-muted);
 }
 

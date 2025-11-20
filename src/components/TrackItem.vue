@@ -1,18 +1,45 @@
 <script setup lang="ts">
+import { computed, toRef } from 'vue';
+import { useRouter } from 'vue-router';
+import { useColorExtraction } from '../composables/useColorExtraction';
+import BaseButton from './BaseButton.vue';
+
 interface Props {
+  trackId?: string;
   image?: string;
   title: string;
   artists: string;
   album?: string;
   duration?: string;
   playedAt?: string;
+  showInfo?: boolean;
 }
 
-defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  showInfo: false
+});
+
+const router = useRouter();
+const imageUrl = toRef(props, 'image');
+const { dominantColor } = useColorExtraction(imageUrl);
+
+const hoverStyle = computed(() => {
+  if (!dominantColor.value) return {};
+  return {
+    '--hover-bg': dominantColor.value
+  };
+});
+
+const handleInfoClick = (event: Event) => {
+  event.stopPropagation();
+  if (props.trackId) {
+    router.push(`/track/${props.trackId}`);
+  }
+};
 </script>
 
 <template>
-  <div class="track-item">
+  <div class="track-item" :style="hoverStyle" :class="{ 'has-color': dominantColor }">
     <img
       v-if="image"
       :src="image"
@@ -20,7 +47,19 @@ defineProps<Props>();
       class="track-image"
     />
     <div class="track-info">
-      <div class="track-name">{{ title }}</div>
+      <div class="track-name-row">
+        <div class="track-name">{{ title }}</div>
+        <BaseButton
+          v-if="showInfo && trackId"
+          icon="pi pi-info-circle"
+          severity="secondary"
+          variant="text"
+          size="small"
+          @click="handleInfoClick"
+          aria-label="Track info"
+          class="info-btn"
+        />
+      </div>
       <div v-if="album || duration || playedAt" class="track-meta">
         <div class="track-artist">{{ artists }}</div>
         <div v-if="duration">{{ duration }}</div>
@@ -36,9 +75,9 @@ defineProps<Props>();
   padding: 10px;
   border-radius: 8px;
   align-items: center;
-  transition: background-color 0.2s;
-  border: 1px solid var(--bgColor-muted);
-  background: var(--bgColor-muted);
+  transition: background-color 0.2s, border-color 0.2s;
+  background: rgb(from var(--hover-bg) r g b / 0.1);
+  border: 1px solid rgb(from var(--hover-bg) r g b / 0);
   color: var(--fgColor-default);
 }
 
@@ -46,6 +85,12 @@ defineProps<Props>();
   border-color: var(--display-green-scale-2);
   color: var(--color-ansi-green-bright);
   background: rgb(from var(--display-green-scale-0) r g b / 0.4);
+}
+
+.track-item.has-color:hover {
+  background: rgb(from var(--hover-bg) r g b / 0.3);
+  border-color: var(--hover-bg);
+  color: var(--fgColor-default);
 }
 
 .track-image {
@@ -63,12 +108,21 @@ defineProps<Props>();
   flex-direction: column;
 }
 
+.track-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .track-name {
   font-weight: 600;
-  
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.info-btn {
+  flex-shrink: 0;
 }
 
 .track-artist {

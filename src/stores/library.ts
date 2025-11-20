@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { spotifyClient } from '../services/spotify';
+import { apiCache } from '../utils/cache';
 
 export interface Artist {
   id: string;
@@ -90,19 +91,35 @@ export const useLibraryStore = defineStore('library', () => {
     timeRange: TimeRange = 'medium_term',
     limit: number = 20
   ): Promise<void> => {
-    isLoading.value = true;
+    const cacheKey = `top-artists-${timeRange}-${limit}`;
+    const cached = apiCache.get<Artist[]>(cacheKey);
+
+    if (cached) {
+      topArtists.value = cached;
+      currentTimeRange.value = timeRange;
+      return;
+    }
+
+    // Only show loading on initial load
+    const isInitialLoad = topArtists.value.length === 0;
+    if (isInitialLoad) {
+      isLoading.value = true;
+    }
     error.value = null;
 
     try {
       const response = await spotifyClient.getTopArtists(timeRange, limit);
       topArtists.value = response.data.items;
       currentTimeRange.value = timeRange;
+      apiCache.set(cacheKey, response.data.items, 60000); // Cache for 1 minute
     } catch (err) {
       console.error('Failed to fetch top artists:', err);
       error.value = err instanceof Error ? err.message : 'Failed to fetch top artists';
       throw err;
     } finally {
-      isLoading.value = false;
+      if (isInitialLoad) {
+        isLoading.value = false;
+      }
     }
   };
 
@@ -113,19 +130,35 @@ export const useLibraryStore = defineStore('library', () => {
     timeRange: TimeRange = 'medium_term',
     limit: number = 20
   ): Promise<void> => {
-    isLoading.value = true;
+    const cacheKey = `top-tracks-${timeRange}-${limit}`;
+    const cached = apiCache.get<TopTrack[]>(cacheKey);
+
+    if (cached) {
+      topTracks.value = cached;
+      currentTimeRange.value = timeRange;
+      return;
+    }
+
+    // Only show loading on initial load
+    const isInitialLoad = topTracks.value.length === 0;
+    if (isInitialLoad) {
+      isLoading.value = true;
+    }
     error.value = null;
 
     try {
       const response = await spotifyClient.getTopTracks(timeRange, limit);
       topTracks.value = response.data.items;
       currentTimeRange.value = timeRange;
+      apiCache.set(cacheKey, response.data.items, 60000); // Cache for 1 minute
     } catch (err) {
       console.error('Failed to fetch top tracks:', err);
       error.value = err instanceof Error ? err.message : 'Failed to fetch top tracks';
       throw err;
     } finally {
-      isLoading.value = false;
+      if (isInitialLoad) {
+        isLoading.value = false;
+      }
     }
   };
 

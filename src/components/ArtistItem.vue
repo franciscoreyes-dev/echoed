@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed, toRef } from 'vue';
+import { useColorExtraction } from '../composables/useColorExtraction';
+
 interface Props {
   rank?: number;
   image?: string;
@@ -7,11 +10,21 @@ interface Props {
   followers?: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+const imageUrl = toRef(props, 'image');
+const { dominantColor } = useColorExtraction(imageUrl);
+
+const hoverStyle = computed(() => {
+  if (!dominantColor.value) return {};
+  return {
+    '--hover-bg': dominantColor.value
+  };
+});
 </script>
 
 <template>
-  <div class="artist-item">
+  <div class="artist-item" :style="hoverStyle" :class="{ 'has-color': dominantColor }">
     <div v-if="rank" class="artist-rank">{{ rank }}</div>
     <img
       v-if="image"
@@ -35,13 +48,18 @@ defineProps<Props>();
   padding: 10px;
   border-radius: 8px;
   align-items: center;
-  transition: background-color 0.2s;
-  border: 1px solid var(--bgColor-muted);
-  background: var(--bgColor-muted);
+  transition: background-color 0.2s, border-color 0.2s;
+  border: 1px solid rgb(from var(--hover-bg) r g b / 0);
+  background: rgb(from var(--hover-bg) r g b / 0.1);
 }
 
 .artist-item:hover {
   border: 1px solid var(--borderColor-default);
+}
+
+.artist-item.has-color:hover {
+  border-color: var(--hover-bg);
+  background: rgb(from var(--hover-bg) r g b / 0.3);
 }
 
 .artist-rank {

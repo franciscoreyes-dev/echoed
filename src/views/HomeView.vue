@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { usePlayerStore } from '../stores/player';
 import { useLibraryStore } from '../stores/library';
@@ -11,6 +11,10 @@ import ArtistItem from '../components/ArtistItem.vue';
 const authStore = useAuthStore();
 const playerStore = usePlayerStore();
 const libraryStore = useLibraryStore();
+
+// Polling interval
+let dataPollingInterval: ReturnType<typeof setInterval> | null = null;
+const DATA_POLLING_INTERVAL = 5000; // 5 seconds for data updates
 
 const handleLogin = async () => {
   await authStore.login();
@@ -27,11 +31,35 @@ const loadUserData = async () => {
   }
 };
 
+const startDataPolling = () => {
+  if (dataPollingInterval) return;
+
+  dataPollingInterval = setInterval(() => {
+    if (authStore.isAuthenticated) {
+      playerStore.fetchRecentlyPlayed(10);
+      libraryStore.fetchTopArtists('medium_term');
+      libraryStore.fetchTopTracks('medium_term');
+    }
+  }, DATA_POLLING_INTERVAL);
+};
+
+const stopDataPolling = () => {
+  if (dataPollingInterval) {
+    clearInterval(dataPollingInterval);
+    dataPollingInterval = null;
+  }
+};
+
 // Load data when authenticated
 onMounted(() => {
   if (authStore.isAuthenticated) {
     loadUserData();
+    startDataPolling();
   }
+});
+
+onUnmounted(() => {
+  stopDataPolling();
 });
 
 // Watch for authentication changes
@@ -40,6 +68,9 @@ watch(
   (isAuth) => {
     if (isAuth) {
       loadUserData();
+      startDataPolling();
+    } else {
+      stopDataPolling();
     }
   }
 );
@@ -108,12 +139,14 @@ watch(
             <TrackItem
               v-for="item in playerStore.recentlyPlayed.slice(0, 5)"
               :key="item.played_at + item.track.id"
+              :track-id="item.track.id"
               :image="item.track.album.images[item.track.album.images.length - 1]?.url"
               :title="item.track.name"
               :artists="item.track.artists.map((a) => a.name).join(', ')"
               :album="item.track.album.name"
               :duration="playerStore.formatDuration(item.track.duration_ms)"
               :played-at="playerStore.formatPlayedAt(item.played_at)"
+              show-info
             />
           </div>
         </DataCard>
@@ -137,38 +170,7 @@ watch(
         </DataCard>
 
         <!-- Listening Stats -->
-        <DataCard title="Listening Stats" icon="pi-chart-line">
-          <div class="stats-grid">
-            <div class="stat-item">
-              <div class="stat-value">{{ libraryStore.topArtists.length }}</div>
-              <div class="stat-label">Top Artists</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ libraryStore.topTracks.length }}</div>
-              <div class="stat-label">Top Tracks</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ libraryStore.totalUniqueGenres }}</div>
-              <div class="stat-label">Unique Genres</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ libraryStore.averagePopularity }}%</div>
-              <div class="stat-label">Avg Popularity</div>
-            </div>
-          </div>
-          <div v-if="libraryStore.topGenres.length > 0" class="top-genres">
-            <div class="genres-label">Top Genres:</div>
-            <div class="genres-list">
-              <span
-                v-for="genre in libraryStore.topGenres"
-                :key="genre"
-                class="genre-tag"
-              >
-                {{ genre }}
-              </span>
-            </div>
-          </div>
-        </DataCard>
+
       </div>
     </div>
   </div>
