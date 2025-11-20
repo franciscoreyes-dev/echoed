@@ -220,4 +220,27 @@ export const spotifyClient = {
    */
   getAudioFeaturesForTracks: (trackIds: string[]) =>
     spotifyApi.get('/audio-features', { params: { ids: trackIds.join(',') } }),
+
+  /**
+   * Get an artist by ID
+   */
+  getArtist: (artistId: string) => spotifyApi.get(`/artists/${artistId}`),
+
+  /**
+   * Get artist's top tracks
+   */
+  getArtistTopTracks: (artistId: string, market = 'US') =>
+    spotifyApi.get(`/artists/${artistId}/top-tracks`, { params: { market } }),
+
+  /**
+   * Get related artists
+   */
+  getRelatedArtists: (artistId: string) =>
+    spotifyApi.get(`/artists/${artistId}/related-artists`),
+
+  /**
+   * Get artist's albums
+   */
+  getArtistAlbums: (artistId: string, limit = 20) =>
+    spotifyApi.get(`/artists/${artistId}/albums`, { params: { limit, include_groups: 'album,single' } }),
 };

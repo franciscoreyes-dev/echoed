@@ -160,6 +160,7 @@ watch(
             <ArtistItem
               v-for="(artist, index) in libraryStore.topArtists.slice(0, 5)"
               :key="artist.id"
+              :artist-id="artist.id"
               :rank="index + 1"
               :image="artist.images[artist.images.length - 1]?.url"
               :name="artist.name"

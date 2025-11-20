@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
+import { useRouter } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
 
 interface Props {
+  artistId?: string;
   rank?: number;
   image?: string;
   name: string;
@@ -11,6 +13,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const router = useRouter();
 
 const imageUrl = toRef(props, 'image');
 const { dominantColor } = useColorExtraction(imageUrl);
@@ -21,10 +24,21 @@ const hoverStyle = computed(() => {
     '--hover-bg': dominantColor.value
   };
 });
+
+const handleClick = () => {
+  if (props.artistId) {
+    router.push(`/artist/${props.artistId}`);
+  }
+};
 </script>
 
 <template>
-  <div class="artist-item" :style="hoverStyle" :class="{ 'has-color': dominantColor }">
+  <div
+    class="artist-item"
+    :style="hoverStyle"
+    :class="{ 'has-color': dominantColor, 'clickable': artistId }"
+    @click="handleClick"
+  >
     <div v-if="rank" class="artist-rank">{{ rank }}</div>
     <img
       v-if="image"
@@ -53,6 +67,10 @@ const hoverStyle = computed(() => {
   background: rgb(from var(--hover-bg) r g b / 0.1);
 }
 
+.artist-item.clickable {
+  cursor: pointer;
+}
+
 .artist-item:hover {
   border: 1px solid var(--borderColor-default);
 }
@@ -72,8 +90,8 @@ const hoverStyle = computed(() => {
 }
 
 .artist-image {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
