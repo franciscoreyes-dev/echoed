@@ -27,19 +27,13 @@ defineProps<Props>();
   transition: all 0.3s;
 }
 
-.data-card:hover {
-  border-color: var(--borderColor-emphasis);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
 .card-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 10px 20px;
   border-bottom: 1px solid var(--borderColor-default);
-  background: var(--bgColor-default);
+  background: var(--bgColor-muted);
 }
 
 .card-header i {

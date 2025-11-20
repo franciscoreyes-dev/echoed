@@ -36,11 +36,12 @@ defineProps<Props>();
   border-radius: 8px;
   align-items: center;
   transition: background-color 0.2s;
-  border: 1px solid var(--borderColor-default);
+  border: 1px solid var(--bgColor-muted);
+  background: var(--bgColor-muted);
 }
 
 .artist-item:hover {
-  background: var(--bgColor-muted);
+  border: 1px solid var(--borderColor-default);
 }
 
 .artist-rank {
@@ -65,7 +66,6 @@ defineProps<Props>();
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
 }
 
 .artist-name {

@@ -54,7 +54,7 @@ export const usePlayerStore = defineStore('player', () => {
 
   // Polling
   let pollingInterval: ReturnType<typeof setInterval> | null = null;
-  const POLLING_INTERVAL = 3000; // 3 seconds
+  const POLLING_INTERVAL = 500; // 1 second
 
   // Computed
   const hasActivePlayback = computed(() => currentlyPlaying.value !== null);

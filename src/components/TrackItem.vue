@@ -21,8 +21,9 @@ defineProps<Props>();
     />
     <div class="track-info">
       <div class="track-name">{{ title }}</div>
-      <div class="track-artist">{{ artists }}</div>
       <div v-if="album || duration || playedAt" class="track-meta">
+        <div class="track-artist">{{ artists }}</div>
+        <div v-if="duration">{{ duration }}</div>
       </div>
     </div>
   </div>
@@ -36,11 +37,15 @@ defineProps<Props>();
   border-radius: 8px;
   align-items: center;
   transition: background-color 0.2s;
-  border: 1px solid var(--borderColor-default);
+  border: 1px solid var(--bgColor-muted);
+  background: var(--bgColor-muted);
+  color: var(--fgColor-default);
 }
 
 .track-item:hover {
-  background: var(--bgColor-muted);
+  border-color: var(--display-green-scale-2);
+  color: var(--color-ansi-green-bright);
+  background: rgb(from var(--display-green-scale-0) r g b / 0.4);
 }
 
 .track-image {
@@ -56,12 +61,11 @@ defineProps<Props>();
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
 }
 
 .track-name {
   font-weight: 600;
-  color: var(--fgColor-default);
+  
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -69,7 +73,6 @@ defineProps<Props>();
 
 .track-artist {
   color: var(--fgColor-muted);
-  font-size: 0.9rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -79,6 +82,7 @@ defineProps<Props>();
   color: var(--fgColor-muted);
   font-size: 0.85rem;
   display: flex;
+  justify-content: space-between;
   gap: 0.5rem;
   align-items: center;
 }
