@@ -172,6 +172,26 @@ export const spotifyClient = {
     ),
 
   /**
+   * Play a context (playlist, album, artist)
+   */
+  playContext: (contextUri: string, deviceId?: string) =>
+    spotifyApi.put(
+      '/me/player/play',
+      { context_uri: contextUri },
+      { params: deviceId ? { device_id: deviceId } : {} }
+    ),
+
+  /**
+   * Reorder tracks in a playlist
+   */
+  reorderPlaylistTracks: (playlistId: string, rangeStart: number, insertBefore: number, rangeLength = 1) =>
+    spotifyApi.put(`/playlists/${playlistId}/tracks`, {
+      range_start: rangeStart,
+      insert_before: insertBefore,
+      range_length: rangeLength
+    }),
+
+  /**
    * Pause playback
    */
   pause: () => spotifyApi.put('/me/player/pause'),

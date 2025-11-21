@@ -46,6 +46,7 @@ const isLoading = ref(true);
 const error = ref<string | null>(null);
 const showDeleteModal = ref(false);
 const isDeleting = ref(false);
+const dragIndex = ref<number | null>(null);
 
 const fetchPlaylistData = async () => {
   const playlistId = route.params.id as string;
@@ -96,6 +97,12 @@ const openInSpotify = () => {
   }
 };
 
+const handlePlay = () => {
+  if (playlist.value) {
+    playerStore.playPlaylist(playlist.value.id);
+  }
+};
+
 const handleDelete = async () => {
   if (!playlist.value) return;
 
@@ -115,6 +122,34 @@ const formatFollowers = (count: number) => {
   if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
   if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
   return count.toString();
+};
+
+const handleDragStart = (index: number) => {
+  dragIndex.value = index;
+};
+
+const handleDrop = async (dropIndex: number) => {
+  if (dragIndex.value === null || dragIndex.value === dropIndex || !playlist.value) return;
+
+  const fromIndex = dragIndex.value;
+  const toIndex = dropIndex;
+
+  // Update local state immediately for responsiveness
+  const [movedItem] = tracks.value.splice(fromIndex, 1);
+  tracks.value.splice(toIndex, 0, movedItem);
+
+  // Call Spotify API to persist the change
+  try {
+    const insertBefore = toIndex > fromIndex ? toIndex + 1 : toIndex;
+    await spotifyClient.reorderPlaylistTracks(playlist.value.id, fromIndex, insertBefore);
+  } catch (err) {
+    console.error('Failed to reorder tracks:', err);
+    // Revert on error
+    const [item] = tracks.value.splice(toIndex, 1);
+    tracks.value.splice(fromIndex, 0, item);
+  }
+
+  dragIndex.value = null;
 };
 
 onMounted(() => {
@@ -173,7 +208,7 @@ onMounted(() => {
               {{ playlist.owner.display_name }}
             </span>
             <span class="tracks-count">
-              <i class="pi pi-music"></i>
+              <i class="pi pi-headphones"></i>
               {{ playlist.tracks.total }} tracks
             </span>
             <span v-if="playlist.followers.total" class="followers">
@@ -183,9 +218,16 @@ onMounted(() => {
           </div>
           <div class="action-buttons">
             <BaseButton
+              icon="pi pi-play"
+              label="Play"
+              severity="success"
+              @click="handlePlay"
+            />
+            <BaseButton
               icon="pi pi-external-link"
               label="Open in Spotify"
-              severity="success"
+              severity="secondary"
+              variant="outlined"
               @click="openInSpotify"
             />
             <BaseButton
@@ -202,7 +244,7 @@ onMounted(() => {
       <!-- Tracks List -->
       <DataCard v-if="tracks.length" title="Tracks" icon="pi-list">
         <div class="tracks-list">
-          <template v-for="item in tracks" :key="item.added_at">
+          <template v-for="(item, index) in tracks" :key="item.added_at">
             <TrackItem
               v-if="item.track"
               :track-id="item.track.id"
@@ -212,6 +254,10 @@ onMounted(() => {
               :album="item.track.album.name"
               :duration="playerStore.formatDuration(item.track.duration_ms)"
               :show-info="true"
+              :draggable="true"
+              :index="index"
+              @dragstart="handleDragStart"
+              @drop="handleDrop"
             />
           </template>
         </div>

@@ -185,6 +185,23 @@ export const usePlayerStore = defineStore('player', () => {
   };
 
   /**
+   * Play a playlist by ID
+   */
+  const playPlaylist = async (playlistId: string): Promise<void> => {
+    try {
+      const contextUri = `spotify:playlist:${playlistId}`;
+      await spotifyClient.playContext(contextUri);
+      isPlaying.value = true;
+      // Wait a bit for Spotify to update, then fetch
+      setTimeout(() => fetchPlaybackState(), 300);
+    } catch (err) {
+      console.error('Failed to play playlist:', err);
+      error.value = 'Failed to play playlist';
+      throw err;
+    }
+  };
+
+  /**
    * Pause playback
    */
   const pause = async (): Promise<void> => {
@@ -320,6 +337,7 @@ export const usePlayerStore = defineStore('player', () => {
     stopPolling,
     play,
     playTrack,
+    playPlaylist,
     pause,
     skipToNext,
     skipToPrevious,

@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
+import { usePlayerStore } from '../stores/player';
 import BaseButton from './BaseButton.vue';
 
 interface Props {
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const playerStore = usePlayerStore();
 const imageUrl = toRef(props, 'image');
 const { dominantColor } = useColorExtraction(imageUrl);
 
@@ -30,6 +32,11 @@ const hoverStyle = computed(() => {
 
 const handleClick = () => {
   router.push(`/playlist/${props.playlistId}`);
+};
+
+const handlePlayClick = (event: Event) => {
+  event.stopPropagation();
+  playerStore.playPlaylist(props.playlistId);
 };
 
 const handleDelete = (event: Event) => {
@@ -45,14 +52,19 @@ const handleDelete = (event: Event) => {
     :class="{ 'has-color': dominantColor }"
     @click="handleClick"
   >
-    <img
-      v-if="image"
-      :src="image"
-      :alt="name"
-      class="playlist-image"
-    />
-    <div v-else class="playlist-image-placeholder">
-      <i class="pi pi-music"></i>
+    <div class="playlist-image-wrapper" @click="handlePlayClick">
+      <img
+        v-if="image"
+        :src="image"
+        :alt="name"
+        class="playlist-image"
+      />
+      <div v-else class="playlist-image-placeholder">
+        <i class="pi pi-music"></i>
+      </div>
+      <div class="play-overlay">
+        <i class="pi pi-play"></i>
+      </div>
     </div>
     <div class="playlist-info">
       <div class="playlist-name-row">
@@ -98,20 +110,26 @@ const handleDelete = (event: Event) => {
   color: var(--fgColor-default);
 }
 
-.playlist-image {
+.playlist-image-wrapper {
+  position: relative;
   width: 64px;
   height: 64px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.playlist-image {
+  width: 100%;
+  height: 100%;
   border-radius: 4px;
   object-fit: cover;
-  flex-shrink: 0;
 }
 
 .playlist-image-placeholder {
-  width: 64px;
-  height: 64px;
+  width: 100%;
+  height: 100%;
   background: var(--bgColor-default);
   border-radius: 4px;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,6 +138,27 @@ const handleDelete = (event: Event) => {
 .playlist-image-placeholder i {
   font-size: 1.5rem;
   color: var(--fgColor-muted);
+}
+
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.playlist-image-wrapper:hover .play-overlay {
+  opacity: 1;
+}
+
+.play-overlay i {
+  color: white;
+  font-size: 1.5rem;
 }
 
 .playlist-info {

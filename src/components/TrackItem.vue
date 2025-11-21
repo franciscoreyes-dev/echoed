@@ -15,11 +15,20 @@ interface Props {
   playedAt?: string;
   showInfo?: boolean;
   spotifyUrl?: string;
+  draggable?: boolean;
+  index?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showInfo: false
+  showInfo: false,
+  draggable: false
 });
+
+const emit = defineEmits<{
+  dragstart: [index: number];
+  dragover: [index: number];
+  drop: [index: number];
+}>();
 
 const router = useRouter();
 const playerStore = usePlayerStore();
@@ -34,7 +43,7 @@ const hoverStyle = computed(() => {
 });
 
 const handleItemClick = () => {
-  if (props.trackId) {
+  if (props.trackId && !props.draggable) {
     router.push(`/track/${props.trackId}`);
   }
 };
@@ -54,15 +63,44 @@ const handleSpotifyClick = (event: Event) => {
     window.open(`https://open.spotify.com/track/${props.trackId}`, '_blank');
   }
 };
+
+const handleDragStart = (event: DragEvent) => {
+  if (!props.draggable || props.index === undefined) return;
+  event.dataTransfer?.setData('text/plain', props.index.toString());
+  emit('dragstart', props.index);
+};
+
+const handleDragOver = (event: DragEvent) => {
+  if (!props.draggable || props.index === undefined) return;
+  event.preventDefault();
+  emit('dragover', props.index);
+};
+
+const handleDrop = (event: DragEvent) => {
+  if (!props.draggable || props.index === undefined) return;
+  event.preventDefault();
+  emit('drop', props.index);
+};
 </script>
 
 <template>
   <div
     class="track-item"
     :style="hoverStyle"
-    :class="{ 'has-color': dominantColor, 'clickable': trackId }"
+    :class="{
+      'has-color': dominantColor,
+      'clickable': trackId && !draggable,
+      'is-draggable': draggable
+    }"
+    :draggable="draggable"
     @click="handleItemClick"
+    @dragstart="handleDragStart"
+    @dragover="handleDragOver"
+    @drop="handleDrop"
   >
+    <div v-if="draggable" class="drag-handle">
+      <i class="pi pi-bars"></i>
+    </div>
     <div v-if="image" class="track-image-wrapper" @click="handlePlayClick">
       <img
         :src="image"
@@ -112,6 +150,14 @@ const handleSpotifyClick = (event: Event) => {
   cursor: pointer;
 }
 
+.track-item.is-draggable {
+  cursor: grab;
+}
+
+.track-item.is-draggable:active {
+  cursor: grabbing;
+}
+
 .track-item:hover {
   border-color: var(--display-green-scale-2);
   color: var(--color-ansi-green-bright);
@@ -122,6 +168,19 @@ const handleSpotifyClick = (event: Event) => {
   background: rgb(from var(--hover-bg) r g b / 0.3);
   border-color: var(--hover-bg);
   color: var(--fgColor-default);
+}
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  color: var(--fgColor-muted);
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .track-image-wrapper {
