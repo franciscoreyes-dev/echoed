@@ -240,6 +240,15 @@ export const spotifyClient = {
     spotifyApi.delete(`/playlists/${playlistId}/followers`),
 
   /**
+   * Upload custom playlist cover image
+   * Image must be Base64 encoded JPEG, max 256KB
+   */
+  uploadPlaylistCover: (playlistId: string, base64Image: string) =>
+    spotifyApi.put(`/playlists/${playlistId}/images`, base64Image, {
+      headers: { 'Content-Type': 'image/jpeg' }
+    }),
+
+  /**
    * Get playlist tracks
    */
   getPlaylistTracks: (playlistId: string, limit = 100, offset = 0) =>

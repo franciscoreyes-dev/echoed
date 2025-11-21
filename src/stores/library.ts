@@ -285,12 +285,26 @@ export const useLibraryStore = defineStore('library', () => {
   /**
    * Create a new playlist
    */
-  const createPlaylist = async (userId: string, name: string, description = ''): Promise<Playlist> => {
+  const createPlaylist = async (userId: string, name: string, description = '', coverImage?: string): Promise<Playlist> => {
     try {
       const response = await spotifyClient.createPlaylist(userId, name, description);
+      const playlist = response.data;
+
+      // Upload cover image if provided
+      if (coverImage) {
+        try {
+          await spotifyClient.uploadPlaylistCover(playlist.id, coverImage);
+          // Wait for Spotify to process the image
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (imgErr) {
+          console.error('Failed to upload playlist cover:', imgErr);
+          // Don't fail the whole operation if image upload fails
+        }
+      }
+
       // Refresh playlists after creation
       await fetchPlaylists();
-      return response.data;
+      return playlist;
     } catch (err) {
       console.error('Failed to create playlist:', err);
       error.value = err instanceof Error ? err.message : 'Failed to create playlist';

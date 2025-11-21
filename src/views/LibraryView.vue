@@ -14,12 +14,15 @@ const libraryStore = useLibraryStore();
 const playerStore = usePlayerStore();
 
 const selectedTimeRange = ref<TimeRange>('medium_term');
-const showCreatePlaylist = ref(false);
+const showCreateModal = ref(false);
 const newPlaylistName = ref('');
+const newPlaylistImage = ref<string | null>(null);
+const newPlaylistImagePreview = ref<string | null>(null);
 const isCreating = ref(false);
 const showDeleteModal = ref(false);
 const playlistToDelete = ref<{ id: string; name: string } | null>(null);
 const isDeleting = ref(false);
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
 const timeRangeOptions = [
   { value: 'short_term', label: '4 Weeks' },
@@ -41,19 +44,71 @@ const handleTimeRangeChange = async (range: TimeRange) => {
   ]);
 };
 
+const handleImageClick = () => {
+  fileInputRef.value?.click();
+};
+
+const handleImageChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  // Create preview URL
+  newPlaylistImagePreview.value = URL.createObjectURL(file);
+
+  // Convert to base64 JPEG
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = Math.min(img.width, img.height);
+      canvas.width = 300;
+      canvas.height = 300;
+      const ctx = canvas.getContext('2d')!;
+
+      // Crop to square and resize
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
+
+      // Convert to base64 JPEG (without data:image/jpeg;base64, prefix)
+      const base64 = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+      newPlaylistImage.value = base64;
+    };
+    img.src = reader.result as string;
+  };
+  reader.readAsDataURL(file);
+};
+
 const handleCreatePlaylist = async () => {
   if (!newPlaylistName.value.trim() || !authStore.user?.id) return;
 
   isCreating.value = true;
   try {
-    await libraryStore.createPlaylist(authStore.user.id, newPlaylistName.value.trim());
+    await libraryStore.createPlaylist(
+      authStore.user.id,
+      newPlaylistName.value.trim(),
+      '',
+      newPlaylistImage.value || undefined
+    );
+    // Reset form
     newPlaylistName.value = '';
-    showCreatePlaylist.value = false;
+    newPlaylistImage.value = null;
+    newPlaylistImagePreview.value = null;
+    showCreateModal.value = false;
   } catch (err) {
     console.error('Failed to create playlist:', err);
   } finally {
     isCreating.value = false;
   }
+};
+
+const closeCreateModal = () => {
+  showCreateModal.value = false;
+  newPlaylistName.value = '';
+  newPlaylistImage.value = null;
+  newPlaylistImagePreview.value = null;
 };
 
 const handleDeleteClick = (playlistId: string) => {
@@ -133,35 +188,15 @@ watch(
       <DataCard title="Playlists" icon="pi-list" class="playlists-card">
         <template #header-actions>
           <BaseButton
-            :icon="showCreatePlaylist ? 'pi pi-times' : 'pi pi-plus'"
+            icon="pi pi-plus"
             severity="success"
-            :variant="showCreatePlaylist ? 'text' : 'outlined'"
-            :label="showCreatePlaylist ? '' : 'New Playlist'"
+            variant="outlined"
+            label="New Playlist"
             size="small"
-            @click="showCreatePlaylist = !showCreatePlaylist"
-            :aria-label="showCreatePlaylist ? 'Cancel' : 'Create playlist'"
+            @click="showCreateModal = true"
+            aria-label="Create playlist"
           />
         </template>
-
-        <!-- Create Playlist Form -->
-        <div v-if="showCreatePlaylist" class="create-playlist-form">
-          <input
-            v-model="newPlaylistName"
-            type="text"
-            placeholder="New playlist name..."
-            class="playlist-input"
-            @keyup.enter="handleCreatePlaylist"
-          />
-          <BaseButton
-            label="Create"
-            icon="pi pi-check"
-            severity="primary"
-            size="small"
-            :loading="isCreating"
-            :disabled="!newPlaylistName.trim()"
-            @click="handleCreatePlaylist"
-          />
-        </div>
 
         <div v-if="libraryStore.isPlaylistsLoading" class="loading-inline">
           <div class="spinner-small"></div>
@@ -267,6 +302,54 @@ watch(
             severity="danger"
             :loading="isDeleting"
             @click="confirmDelete"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Playlist Modal -->
+    <div v-if="showCreateModal" class="modal-overlay" @click.self="closeCreateModal">
+      <div class="modal-content">
+        <h3>New Playlist</h3>
+        <div class="create-form">
+          <div class="cover-upload" @click="handleImageClick">
+            <img v-if="newPlaylistImagePreview" :src="newPlaylistImagePreview" alt="Playlist cover" />
+            <div v-else class="cover-placeholder">
+              <i class="pi pi-image"></i>
+            </div>
+            <div class="cover-edit-icon">
+              <i class="pi pi-pencil"></i>
+            </div>
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept="image/*"
+              class="hidden-input"
+              @change="handleImageChange"
+            />
+          </div>
+          <input
+            v-model="newPlaylistName"
+            type="text"
+            placeholder="Playlist name"
+            class="playlist-name-input"
+            @keyup.enter="handleCreatePlaylist"
+          />
+        </div>
+        <div class="modal-actions">
+          <BaseButton
+            label="Cancel"
+            severity="secondary"
+            variant="outlined"
+            @click="closeCreateModal"
+          />
+          <BaseButton
+            label="Create"
+            icon="pi pi-check"
+            severity="primary"
+            :loading="isCreating"
+            :disabled="!newPlaylistName.trim()"
+            @click="handleCreatePlaylist"
           />
         </div>
       </div>
@@ -400,28 +483,86 @@ watch(
   color: var(--fgColor-muted);
 }
 
-/* Create Playlist Form */
-.create-playlist-form {
+/* Create Playlist Modal */
+.create-form {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background: var(--bgColor-default);
-  border-radius: 6px;
-  border: 1px solid var(--borderColor-default);
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.playlist-input {
-  flex: 1;
-  padding: 0.5rem 0.75rem;
+.cover-upload {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bgColor-muted);
+  border: 2px dashed var(--borderColor-default);
+  transition: border-color 0.2s;
+}
+
+.cover-upload:hover {
+  border-color: var(--color-ansi-green-bright);
+}
+
+.cover-upload img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-placeholder i {
+  font-size: 3rem;
+  color: var(--fgColor-muted);
+}
+
+.cover-edit-icon {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: var(--bgColor-default);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.cover-edit-icon i {
+  font-size: 0.8rem;
+  color: var(--fgColor-default);
+}
+
+.hidden-input {
+  display: none;
+}
+
+.playlist-name-input {
+  width: 100%;
+  max-width: 200px;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--borderColor-default);
   border-radius: 6px;
   background: var(--bgColor-muted);
   color: var(--fgColor-default);
-  font-size: 0.9rem;
+  font-size: 1rem;
+  text-align: center;
 }
 
-.playlist-input:focus {
+.playlist-name-input:focus {
   outline: none;
   border-color: var(--color-ansi-green-bright);
 }

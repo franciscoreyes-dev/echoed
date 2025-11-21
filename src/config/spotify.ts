@@ -29,6 +29,7 @@ export const SPOTIFY_CONFIG = {
     'playlist-read-collaborative', // Read collaborative playlists
     'playlist-modify-public',   // Modify public playlists
     'playlist-modify-private',  // Modify private playlists
+    'ugc-image-upload',         // Upload playlist cover images
     'streaming',                // Web Playback SDK
   ],
 } as const;

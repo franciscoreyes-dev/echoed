@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import draggable from 'vuedraggable';
 import { spotifyClient } from '../services/spotify';
 import { useLibraryStore } from '../stores/library';
 import { usePlayerStore } from '../stores/player';
@@ -46,7 +47,7 @@ const isLoading = ref(true);
 const error = ref<string | null>(null);
 const showDeleteModal = ref(false);
 const isDeleting = ref(false);
-const dragIndex = ref<number | null>(null);
+const drag = ref(false);
 
 const fetchPlaylistData = async () => {
   const playlistId = route.params.id as string;
@@ -124,32 +125,20 @@ const formatFollowers = (count: number) => {
   return count.toString();
 };
 
-const handleDragStart = (index: number) => {
-  dragIndex.value = index;
-};
+const onDragChange = async (event: { moved?: { oldIndex: number; newIndex: number } }) => {
+  if (!event.moved || !playlist.value) return;
 
-const handleDrop = async (dropIndex: number) => {
-  if (dragIndex.value === null || dragIndex.value === dropIndex || !playlist.value) return;
-
-  const fromIndex = dragIndex.value;
-  const toIndex = dropIndex;
-
-  // Update local state immediately for responsiveness
-  const [movedItem] = tracks.value.splice(fromIndex, 1);
-  tracks.value.splice(toIndex, 0, movedItem);
+  const { oldIndex, newIndex } = event.moved;
 
   // Call Spotify API to persist the change
   try {
-    const insertBefore = toIndex > fromIndex ? toIndex + 1 : toIndex;
-    await spotifyClient.reorderPlaylistTracks(playlist.value.id, fromIndex, insertBefore);
+    const insertBefore = newIndex > oldIndex ? newIndex + 1 : newIndex;
+    await spotifyClient.reorderPlaylistTracks(playlist.value.id, oldIndex, insertBefore);
   } catch (err) {
     console.error('Failed to reorder tracks:', err);
-    // Revert on error
-    const [item] = tracks.value.splice(toIndex, 1);
-    tracks.value.splice(fromIndex, 0, item);
+    // Revert on error by re-fetching
+    await fetchPlaylistData();
   }
-
-  dragIndex.value = null;
 };
 
 onMounted(() => {
@@ -218,7 +207,7 @@ onMounted(() => {
           </div>
           <div class="action-buttons">
             <BaseButton
-              icon="pi pi-play"
+              icon="pi pi-play-circle"
               label="Play"
               severity="success"
               @click="handlePlay"
@@ -243,8 +232,19 @@ onMounted(() => {
 
       <!-- Tracks List -->
       <DataCard v-if="tracks.length" title="Tracks" icon="pi-list">
-        <div class="tracks-list">
-          <template v-for="(item, index) in tracks" :key="item.added_at">
+        <draggable
+          v-model="tracks"
+          item-key="added_at"
+          class="tracks-list"
+          ghost-class="ghost"
+          drag-class="dragging"
+          :animation="200"
+          handle=".drag-handle"
+          @start="drag = true"
+          @end="drag = false"
+          @change="onDragChange"
+        >
+          <template #item="{ element: item }">
             <TrackItem
               v-if="item.track"
               :track-id="item.track.id"
@@ -255,12 +255,9 @@ onMounted(() => {
               :duration="playerStore.formatDuration(item.track.duration_ms)"
               :show-info="true"
               :draggable="true"
-              :index="index"
-              @dragstart="handleDragStart"
-              @drop="handleDrop"
             />
           </template>
-        </div>
+        </draggable>
       </DataCard>
     </div>
 
@@ -417,6 +414,11 @@ onMounted(() => {
   overflow-y: auto;
 }
 
+.ghost {
+  opacity: 0.5;
+  background: var(--bgColor-muted);
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;
@@ -479,5 +481,13 @@ onMounted(() => {
   .action-buttons {
     flex-direction: column;
   }
+}
+</style>
+
+<style>
+.dragging {
+  opacity: 1 !important;
+  background: var(--bgColor-default) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 </style>

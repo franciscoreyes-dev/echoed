@@ -24,12 +24,6 @@ const props = withDefaults(defineProps<Props>(), {
   draggable: false
 });
 
-const emit = defineEmits<{
-  dragstart: [index: number];
-  dragover: [index: number];
-  drop: [index: number];
-}>();
-
 const router = useRouter();
 const playerStore = usePlayerStore();
 const imageUrl = toRef(props, 'image');
@@ -63,24 +57,6 @@ const handleSpotifyClick = (event: Event) => {
     window.open(`https://open.spotify.com/track/${props.trackId}`, '_blank');
   }
 };
-
-const handleDragStart = (event: DragEvent) => {
-  if (!props.draggable || props.index === undefined) return;
-  event.dataTransfer?.setData('text/plain', props.index.toString());
-  emit('dragstart', props.index);
-};
-
-const handleDragOver = (event: DragEvent) => {
-  if (!props.draggable || props.index === undefined) return;
-  event.preventDefault();
-  emit('dragover', props.index);
-};
-
-const handleDrop = (event: DragEvent) => {
-  if (!props.draggable || props.index === undefined) return;
-  event.preventDefault();
-  emit('drop', props.index);
-};
 </script>
 
 <template>
@@ -92,11 +68,7 @@ const handleDrop = (event: DragEvent) => {
       'clickable': trackId && !draggable,
       'is-draggable': draggable
     }"
-    :draggable="draggable"
     @click="handleItemClick"
-    @dragstart="handleDragStart"
-    @dragover="handleDragOver"
-    @drop="handleDrop"
   >
     <div v-if="draggable" class="drag-handle">
       <i class="pi pi-bars"></i>
