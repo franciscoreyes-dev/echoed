@@ -219,6 +219,40 @@ export const spotifyClient = {
     spotifyApi.put('/me/player/volume', {}, { params: { volume_percent: volumePercent } }),
 
   /**
+   * Set shuffle mode
+   */
+  setShuffle: (state: boolean) =>
+    spotifyApi.put('/me/player/shuffle', {}, { params: { state } }),
+
+  /**
+   * Set repeat mode (track, context, off)
+   */
+  setRepeat: (state: 'track' | 'context' | 'off') =>
+    spotifyApi.put('/me/player/repeat', {}, { params: { state } }),
+
+  /**
+   * Get user's queue
+   */
+  getQueue: () => spotifyApi.get('/me/player/queue'),
+
+  /**
+   * Add item to queue
+   */
+  addToQueue: (uri: string) =>
+    spotifyApi.post('/me/player/queue', {}, { params: { uri } }),
+
+  /**
+   * Get available devices
+   */
+  getDevices: () => spotifyApi.get('/me/player/devices'),
+
+  /**
+   * Transfer playback to a device
+   */
+  transferPlayback: (deviceId: string, play = false) =>
+    spotifyApi.put('/me/player', { device_ids: [deviceId], play }),
+
+  /**
    * Get a playlist
    */
   getPlaylist: (playlistId: string) => spotifyApi.get(`/playlists/${playlistId}`),

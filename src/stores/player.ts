@@ -52,6 +52,11 @@ export const usePlayerStore = defineStore('player', () => {
   const deviceId = ref<string | null>(null);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const shuffleState = ref(false);
+  const repeatState = ref<'off' | 'context' | 'track'>('off');
+  const queue = ref<SpotifyTrack[]>([]);
+  const devices = ref<{ id: string; name: string; type: string; is_active: boolean }[]>([]);
+  const currentDevice = ref<{ id: string; name: string; type: string } | null>(null);
 
   // Polling
   let pollingInterval: ReturnType<typeof setInterval> | null = null;
@@ -109,6 +114,15 @@ export const usePlayerStore = defineStore('player', () => {
         durationMs.value = playbackState.item.duration_ms;
         volumePercent.value = playbackState.device?.volume_percent || 50;
         deviceId.value = playbackState.device?.id || null;
+        shuffleState.value = playbackState.shuffle_state || false;
+        repeatState.value = playbackState.repeat_state || 'off';
+        if (playbackState.device) {
+          currentDevice.value = {
+            id: playbackState.device.id,
+            name: playbackState.device.name,
+            type: playbackState.device.type
+          };
+        }
       } else {
         // No active playback
         currentlyPlaying.value = null;
@@ -315,6 +329,91 @@ export const usePlayerStore = defineStore('player', () => {
     return date.toLocaleDateString();
   };
 
+  /**
+   * Toggle shuffle mode
+   */
+  const toggleShuffle = async (): Promise<void> => {
+    try {
+      const newState = !shuffleState.value;
+      await spotifyClient.setShuffle(newState);
+      shuffleState.value = newState;
+    } catch (err) {
+      console.error('Failed to toggle shuffle:', err);
+      error.value = 'Failed to toggle shuffle';
+      throw err;
+    }
+  };
+
+  /**
+   * Cycle through repeat modes: off -> context -> track -> off
+   */
+  const cycleRepeat = async (): Promise<void> => {
+    try {
+      const modes: Array<'off' | 'context' | 'track'> = ['off', 'context', 'track'];
+      const currentIndex = modes.indexOf(repeatState.value);
+      const nextState = modes[(currentIndex + 1) % 3];
+      await spotifyClient.setRepeat(nextState);
+      repeatState.value = nextState;
+    } catch (err) {
+      console.error('Failed to set repeat mode:', err);
+      error.value = 'Failed to set repeat mode';
+      throw err;
+    }
+  };
+
+  /**
+   * Fetch user's queue
+   */
+  const fetchQueue = async (): Promise<void> => {
+    try {
+      const response = await spotifyClient.getQueue();
+      queue.value = response.data.queue || [];
+    } catch (err) {
+      console.error('Failed to fetch queue:', err);
+    }
+  };
+
+  /**
+   * Add track to queue
+   */
+  const addToQueue = async (trackUri: string): Promise<void> => {
+    try {
+      await spotifyClient.addToQueue(trackUri);
+      await fetchQueue();
+    } catch (err) {
+      console.error('Failed to add to queue:', err);
+      error.value = 'Failed to add to queue';
+      throw err;
+    }
+  };
+
+  /**
+   * Fetch available devices
+   */
+  const fetchDevices = async (): Promise<void> => {
+    try {
+      const response = await spotifyClient.getDevices();
+      devices.value = response.data.devices || [];
+    } catch (err) {
+      console.error('Failed to fetch devices:', err);
+    }
+  };
+
+  /**
+   * Transfer playback to a device
+   */
+  const transferToDevice = async (targetDeviceId: string): Promise<void> => {
+    try {
+      await spotifyClient.transferPlayback(targetDeviceId, isPlaying.value);
+      deviceId.value = targetDeviceId;
+      await fetchPlaybackState();
+    } catch (err) {
+      console.error('Failed to transfer playback:', err);
+      error.value = 'Failed to transfer playback';
+      throw err;
+    }
+  };
+
   return {
     // State
     recentlyPlayed,
@@ -326,6 +425,11 @@ export const usePlayerStore = defineStore('player', () => {
     deviceId,
     isLoading,
     error,
+    shuffleState,
+    repeatState,
+    queue,
+    devices,
+    currentDevice,
 
     // Computed
     hasActivePlayback,
@@ -346,5 +450,11 @@ export const usePlayerStore = defineStore('player', () => {
     togglePlayPause,
     formatDuration,
     formatPlayedAt,
+    toggleShuffle,
+    cycleRepeat,
+    fetchQueue,
+    addToQueue,
+    fetchDevices,
+    transferToDevice,
   };
 });

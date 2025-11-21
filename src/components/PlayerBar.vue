@@ -15,6 +15,10 @@ const previousVolume = ref(50);
 const lastVolumeChangeTime = ref(0);
 const VOLUME_SYNC_DELAY = 2000; // Ignore store updates for 2 seconds after local change
 
+// UI state for panels
+const showQueue = ref(false);
+const showDevices = ref(false);
+
 // Computed values from store
 const currentTrack = computed(() => playerStore.currentlyPlaying);
 const isPlaying = computed(() => playerStore.isPlaying);
@@ -135,6 +139,65 @@ const toggleMute = async () => {
   }
 };
 
+const handleShuffle = async () => {
+  try {
+    await playerStore.toggleShuffle();
+  } catch (err) {
+    console.error('Shuffle toggle failed:', err);
+  }
+};
+
+const handleRepeat = async () => {
+  try {
+    await playerStore.cycleRepeat();
+  } catch (err) {
+    console.error('Repeat cycle failed:', err);
+  }
+};
+
+const toggleQueue = async () => {
+  showDevices.value = false;
+  showQueue.value = !showQueue.value;
+  if (showQueue.value) {
+    await playerStore.fetchQueue();
+  }
+};
+
+const toggleDevices = async () => {
+  showQueue.value = false;
+  showDevices.value = !showDevices.value;
+  if (showDevices.value) {
+    await playerStore.fetchDevices();
+  }
+};
+
+const selectDevice = async (deviceId: string) => {
+  try {
+    await playerStore.transferToDevice(deviceId);
+    showDevices.value = false;
+  } catch (err) {
+    console.error('Device transfer failed:', err);
+  }
+};
+
+const playQueueTrack = async (trackId: string) => {
+  try {
+    await playerStore.playTrack(trackId);
+    showQueue.value = false;
+  } catch (err) {
+    console.error('Failed to play queue track:', err);
+  }
+};
+
+const getDeviceIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'computer': return 'pi pi-desktop';
+    case 'smartphone': return 'pi pi-mobile';
+    case 'speaker': return 'pi pi-volume-up';
+    default: return 'pi pi-wifi';
+  }
+};
+
 // Watch auth state and start/stop polling
 watch(
   () => authStore.isAuthenticated,
@@ -189,6 +252,17 @@ onUnmounted(() => {
       <div class="player-controls">
         <div class="control-buttons">
           <BaseButton
+            icon="pi pi-sparkles"
+            variant="text"
+            :severity="playerStore.shuffleState ? 'success' : 'secondary'"
+            aria-label="Shuffle"
+            @click="handleShuffle"
+            :disabled="!currentTrack"
+            size="small"
+            :class="{ active: playerStore.shuffleState }"
+          />
+
+          <BaseButton
             icon="pi pi-step-backward"
             rounded
             severity="secondary"
@@ -216,6 +290,20 @@ onUnmounted(() => {
             @click="handleNext"
             :disabled="!currentTrack"
           />
+
+          <div class="repeat-button-wrapper">
+            <BaseButton
+              icon="pi pi-refresh"
+              variant="text"
+              :severity="playerStore.repeatState !== 'off' ? 'success' : 'secondary'"
+              aria-label="Repeat"
+              @click="handleRepeat"
+              :disabled="!currentTrack"
+              size="small"
+              :class="{ active: playerStore.repeatState !== 'off' }"
+            />
+            <span v-if="playerStore.repeatState === 'track'" class="repeat-badge">1</span>
+          </div>
         </div>
 
         <!-- Progress Bar -->
@@ -240,31 +328,122 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Volume Control -->
-      <div class="volume-control">
+      <!-- Right Controls -->
+      <div class="right-controls">
         <BaseButton
-          :icon="localVolume === 0 ? 'pi pi-volume-off' : localVolume < 50 ? 'pi pi-volume-down' : 'pi pi-volume-up'"
+          icon="pi pi-list"
           variant="text"
-          severity="secondary"
+          :severity="showQueue ? 'success' : 'secondary'"
           size="small"
-          aria-label="Volume"
+          aria-label="Queue"
           :disabled="!currentTrack"
-          @click="toggleMute"
+          @click="toggleQueue"
         />
-        <div class="volume-slider-container">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            :value="localVolume"
-            @input="handleVolumeChange"
-            class="volume-slider"
+        <BaseButton
+          :icon="getDeviceIcon(playerStore.currentDevice?.type || '')"
+          variant="text"
+          :severity="showDevices ? 'success' : 'secondary'"
+          size="small"
+          aria-label="Devices"
+          @click="toggleDevices"
+        />
+        <div class="volume-control">
+          <BaseButton
+            :icon="localVolume === 0 ? 'pi pi-volume-off' : localVolume < 50 ? 'pi pi-volume-down' : 'pi pi-volume-up'"
+            variant="text"
+            severity="secondary"
+            size="small"
+            aria-label="Volume"
             :disabled="!currentTrack"
+            @click="toggleMute"
           />
-          <div
-            class="volume-fill"
-            :style="{ width: `${localVolume}%` }"
-          ></div>
+          <div class="volume-slider-container">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              :value="localVolume"
+              @input="handleVolumeChange"
+              class="volume-slider"
+              :disabled="!currentTrack"
+            />
+            <div
+              class="volume-fill"
+              :style="{ width: `${localVolume}%` }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Queue Panel -->
+        <div v-if="showQueue" class="panel queue-panel">
+          <div class="panel-header">
+            <h4>Queue</h4>
+            <BaseButton
+              icon="pi pi-times"
+              variant="text"
+              severity="secondary"
+              size="small"
+              @click="showQueue = false"
+            />
+          </div>
+          <div class="panel-content">
+            <div v-if="playerStore.queue.length === 0" class="empty-panel">
+              <p>Queue is empty</p>
+            </div>
+            <div v-else class="queue-list">
+              <div
+                v-for="(track, index) in playerStore.queue.slice(0, 10)"
+                :key="track.id + index"
+                class="queue-item"
+                @click="playQueueTrack(track.id)"
+              >
+                <img
+                  v-if="track.album.images[0]"
+                  :src="track.album.images[track.album.images.length - 1]?.url"
+                  :alt="track.name"
+                  class="queue-image"
+                />
+                <div class="queue-info">
+                  <div class="queue-name">{{ track.name }}</div>
+                  <div class="queue-artist">{{ track.artists.map(a => a.name).join(', ') }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Devices Panel -->
+        <div v-if="showDevices" class="panel devices-panel">
+          <div class="panel-header">
+            <h4>Devices</h4>
+            <BaseButton
+              icon="pi pi-times"
+              variant="text"
+              severity="secondary"
+              size="small"
+              @click="showDevices = false"
+            />
+          </div>
+          <div class="panel-content">
+            <div v-if="playerStore.devices.length === 0" class="empty-panel">
+              <p>No devices found</p>
+            </div>
+            <div v-else class="device-list">
+              <div
+                v-for="device in playerStore.devices"
+                :key="device.id"
+                class="device-item"
+                :class="{ active: device.is_active }"
+                @click="selectDevice(device.id)"
+              >
+                <i :class="getDeviceIcon(device.type)"></i>
+                <div class="device-info">
+                  <div class="device-name">{{ device.name }}</div>
+                  <div v-if="device.is_active" class="device-active">Currently playing</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -374,6 +553,28 @@ onUnmounted(() => {
   gap: 1rem;
 }
 
+.repeat-button-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.repeat-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  background: var(--color-ansi-green-bright);
+  color: var(--bgColor-default);
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 /* Progress Bar */
 .progress-container {
   display: flex;
@@ -423,12 +624,20 @@ onUnmounted(() => {
   background: var(--button-primary-bgColor-hover);
 }
 
+/* Right Controls */
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  position: relative;
+}
+
 /* Volume Control */
 .volume-control {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .volume-slider-container {
@@ -465,13 +674,155 @@ onUnmounted(() => {
   background: var(--button-primary-bgColor-hover);
 }
 
+/* Panels */
+.panel {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  width: 300px;
+  max-height: 400px;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 8px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--borderColor-default);
+}
+
+.panel-header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--fgColor-default);
+}
+
+.panel-content {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.empty-panel {
+  padding: 2rem;
+  text-align: center;
+  color: var(--fgColor-muted);
+}
+
+.empty-panel p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Queue styles */
+.queue-list {
+  padding: 0.5rem;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.queue-item:hover {
+  background: var(--bgColor-muted);
+}
+
+.queue-item:active {
+  background: rgb(from var(--color-ansi-green-bright) r g b / 0.1);
+}
+
+.queue-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.queue-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.queue-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--fgColor-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-artist {
+  font-size: 0.75rem;
+  color: var(--fgColor-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Device styles */
+.device-list {
+  padding: 0.5rem;
+}
+
+.device-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.device-item:hover {
+  background: var(--bgColor-muted);
+}
+
+.device-item.active {
+  background: rgb(from var(--color-ansi-green-bright) r g b / 0.1);
+}
+
+.device-item i {
+  font-size: 1.25rem;
+  color: var(--fgColor-muted);
+}
+
+.device-item.active i {
+  color: var(--color-ansi-green-bright);
+}
+
+.device-info {
+  flex: 1;
+}
+
+.device-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--fgColor-default);
+}
+
+.device-active {
+  font-size: 0.75rem;
+  color: var(--color-ansi-green-bright);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .player-container {
     grid-template-columns: 1fr 2fr;
   }
 
-  .volume-control {
+  .right-controls {
     display: none;
   }
 }
