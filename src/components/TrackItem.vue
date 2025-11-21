@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
+import { usePlayerStore } from '../stores/player';
 import BaseButton from './BaseButton.vue';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
   duration?: string;
   playedAt?: string;
   showInfo?: boolean;
+  spotifyUrl?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -20,6 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const router = useRouter();
+const playerStore = usePlayerStore();
 const imageUrl = toRef(props, 'image');
 const { dominantColor } = useColorExtraction(imageUrl);
 
@@ -30,35 +33,58 @@ const hoverStyle = computed(() => {
   };
 });
 
-const handleInfoClick = (event: Event) => {
-  event.stopPropagation();
+const handleItemClick = () => {
   if (props.trackId) {
     router.push(`/track/${props.trackId}`);
+  }
+};
+
+const handlePlayClick = (event: Event) => {
+  event.stopPropagation();
+  if (props.trackId) {
+    playerStore.playTrack(props.trackId);
+  }
+};
+
+const handleSpotifyClick = (event: Event) => {
+  event.stopPropagation();
+  if (props.spotifyUrl) {
+    window.open(props.spotifyUrl, '_blank');
+  } else if (props.trackId) {
+    window.open(`https://open.spotify.com/track/${props.trackId}`, '_blank');
   }
 };
 </script>
 
 <template>
-  <div class="track-item" :style="hoverStyle" :class="{ 'has-color': dominantColor }">
-    <img
-      v-if="image"
-      :src="image"
-      :alt="album || title"
-      class="track-image"
-    />
+  <div
+    class="track-item"
+    :style="hoverStyle"
+    :class="{ 'has-color': dominantColor, 'clickable': trackId }"
+    @click="handleItemClick"
+  >
+    <div v-if="image" class="track-image-wrapper" @click="handlePlayClick">
+      <img
+        :src="image"
+        :alt="album || title"
+        class="track-image"
+      />
+      <div class="play-overlay">
+        <i class="pi pi-play"></i>
+      </div>
+    </div>
     <div class="track-info">
       <div class="track-name-row">
         <div class="track-name">{{ title }}</div>
         <BaseButton
           v-if="showInfo && trackId"
-          icon="pi pi-info-circle"
+          label="Open on Spotify"
           severity="secondary"
           variant="text"
           size="small"
-          @click="handleInfoClick"
-          aria-label="Track info"
-          class="info-btn"
-          rounded
+          @click="handleSpotifyClick"
+          aria-label="Open on Spotify"
+          class="spotify-btn"
         />
       </div>
       <div v-if="album || duration || playedAt" class="track-meta">
@@ -82,6 +108,10 @@ const handleInfoClick = (event: Event) => {
   color: var(--fgColor-default);
 }
 
+.track-item.clickable {
+  cursor: pointer;
+}
+
 .track-item:hover {
   border-color: var(--display-green-scale-2);
   color: var(--color-ansi-green-bright);
@@ -94,12 +124,40 @@ const handleInfoClick = (event: Event) => {
   color: var(--fgColor-default);
 }
 
-.track-image {
+.track-image-wrapper {
+  position: relative;
   width: 64px;
   height: 64px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.track-image {
+  width: 100%;
+  height: 100%;
   border-radius: 4px;
   object-fit: cover;
-  flex-shrink: 0;
+}
+
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.track-image-wrapper:hover .play-overlay {
+  opacity: 1;
+}
+
+.play-overlay i {
+  color: white;
+  font-size: 1.5rem;
 }
 
 .track-info {
@@ -124,11 +182,11 @@ const handleInfoClick = (event: Event) => {
   text-overflow: ellipsis;
 }
 
-.info-btn {
+.spotify-btn {
   flex-shrink: 0;
 }
 
-.track-item.has-color .info-btn:hover {
+.track-item.has-color .spotify-btn:hover {
   background: rgb(from var(--hover-bg) r g b / 0.1) !important;
 }
 

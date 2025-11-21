@@ -155,12 +155,14 @@ onMounted(() => {
               {{ genre }}
             </span>
           </div>
-          <BaseButton
-            icon="pi pi-external-link"
-            label="Open in Spotify"
-            severity="success"
-            @click="openInSpotify"
-          />
+          <div class="spotify-button">
+            <BaseButton
+              icon="pi pi-external-link"
+              label="Open in Spotify"
+              severity="success"
+              @click="openInSpotify"
+            />
+          </div>
         </div>
       </div>
 
@@ -282,10 +284,13 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
 }
 
-.artist-main-info :deep(.p-button) {
+.spotify-button {
+  margin-top: auto;
+}
+
+.spotify-button :deep(.p-button) {
   width: fit-content;
 }
 

@@ -36,13 +36,14 @@ defineProps<Props>();
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  padding: 10px;
   background: var(--bgColor-muted);
 }
 
 .header-left {
   display: flex;
   align-items: center;
+  padding: 0 10px;
   gap: 0.75rem;
 }
 
@@ -65,6 +66,6 @@ defineProps<Props>();
 }
 
 .card-content {
-  padding: 20px;
+  padding: 10px;
 }
 </style>

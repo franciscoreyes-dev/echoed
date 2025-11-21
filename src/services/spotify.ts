@@ -162,6 +162,16 @@ export const spotifyClient = {
     spotifyApi.put('/me/player/play', {}, { params: deviceId ? { device_id: deviceId } : {} }),
 
   /**
+   * Play a specific track by URI
+   */
+  playTrack: (trackUri: string, deviceId?: string) =>
+    spotifyApi.put(
+      '/me/player/play',
+      { uris: [trackUri] },
+      { params: deviceId ? { device_id: deviceId } : {} }
+    ),
+
+  /**
    * Pause playback
    */
   pause: () => spotifyApi.put('/me/player/pause'),
@@ -192,6 +202,28 @@ export const spotifyClient = {
    * Get a playlist
    */
   getPlaylist: (playlistId: string) => spotifyApi.get(`/playlists/${playlistId}`),
+
+  /**
+   * Create a new playlist
+   */
+  createPlaylist: (userId: string, name: string, description = '', isPublic = true) =>
+    spotifyApi.post(`/users/${userId}/playlists`, {
+      name,
+      description,
+      public: isPublic
+    }),
+
+  /**
+   * Unfollow (delete) a playlist
+   */
+  unfollowPlaylist: (playlistId: string) =>
+    spotifyApi.delete(`/playlists/${playlistId}/followers`),
+
+  /**
+   * Get playlist tracks
+   */
+  getPlaylistTracks: (playlistId: string, limit = 100, offset = 0) =>
+    spotifyApi.get(`/playlists/${playlistId}/tracks`, { params: { limit, offset } }),
 
   /**
    * Search for items
