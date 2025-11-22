@@ -155,7 +155,8 @@ export const useAuthStore = defineStore('auth', () => {
           // Retry the request
           return fetchUserProfile();
         }
-        throw new Error(`Failed to fetch user profile: ${response.statusText}`);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Failed to fetch user profile: ${response.status} - ${errorText}`);
       }
 
       user.value = await response.json();
