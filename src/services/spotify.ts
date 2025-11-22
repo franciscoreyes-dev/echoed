@@ -34,7 +34,7 @@ const createSpotifyClient = (): AxiosInstance => {
         console.error('Failed to get access token:', error);
         // Redirect to login if not authenticated
         authStore.logout();
-        window.location.href = '/';
+        window.location.href = import.meta.env.BASE_URL;
         return Promise.reject(error);
       }
 
@@ -73,7 +73,7 @@ const createSpotifyClient = (): AxiosInstance => {
           // If refresh fails, logout and redirect to home
           console.error('Token refresh failed, logging out:', refreshError);
           authStore.logout();
-          window.location.href = '/';
+          window.location.href = import.meta.env.BASE_URL;
           return Promise.reject(refreshError);
         }
       }
