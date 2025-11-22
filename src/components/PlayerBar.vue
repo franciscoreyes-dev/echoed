@@ -836,11 +836,78 @@ onUnmounted(() => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .player-bar {
+    height: 70px;
+  }
+
   .player-container {
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+  }
+
+  .track-info {
+    gap: 0.5rem;
+  }
+
+  .track-artwork {
+    width: 44px;
+    height: 44px;
+  }
+
+  .track-name {
+    font-size: 0.8rem;
+  }
+
+  .track-artist {
+    font-size: 0.7rem;
+  }
+
+  .player-controls {
+    gap: 0.25rem;
+  }
+
+  .control-buttons {
+    gap: 0.25rem;
+  }
+
+  .control-buttons .base-button:first-child,
+  .control-buttons .repeat-button-wrapper {
+    display: none;
+  }
+
+  .progress-container {
+    display: none;
   }
 
   .right-controls {
+    justify-content: flex-end;
+  }
+
+  .volume-slider-container {
+    display: none;
+  }
+
+  .panel {
+    position: fixed;
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    bottom: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-container {
+    padding: 0 0.5rem;
+  }
+
+  .track-details {
+    max-width: 80px;
+  }
+
+  .right-controls .base-button:nth-child(1),
+  .right-controls .base-button:nth-child(2) {
     display: none;
   }
 }

@@ -273,6 +273,7 @@ const userAvatar = computed(() => {
   .hamburger-button {
     display: flex;
     order: 3;
+    margin-left: 0.5rem;
   }
 
   .nav-menu {
