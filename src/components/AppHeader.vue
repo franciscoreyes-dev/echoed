@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import Avatar from 'primevue/avatar';
 import BaseButton from './BaseButton.vue';
 import SearchBar from './SearchBar.vue';
@@ -12,10 +12,21 @@ const router = useRouter();
 const authStore = useAuthStore();
 const { currentTheme, toggleTheme } = useTheme();
 
+const mobileMenuOpen = ref(false);
+
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value;
+};
+
+const closeMobileMenu = () => {
+  mobileMenuOpen.value = false;
+};
+
 const isActive = (routeName: string) => computed(() => route.name === routeName);
 
 const navigateTo = (path: string) => {
   router.push(path);
+  closeMobileMenu();
 };
 
 const themeIcon = computed(() =>
@@ -44,7 +55,17 @@ const userAvatar = computed(() => {
         </RouterLink>
       </div>
 
-      <nav class="nav-menu">
+      <!-- Hamburger button for mobile -->
+      <BaseButton
+        :icon="mobileMenuOpen ? 'pi pi-times' : 'pi pi-bars'"
+        severity="secondary"
+        variant="text"
+        @click="toggleMobileMenu"
+        class="hamburger-button"
+        aria-label="Toggle menu"
+      />
+
+      <nav class="nav-menu" :class="{ 'mobile-open': mobileMenuOpen }">
         <BaseButton
           icon="pi pi-home"
           label="Home"
@@ -82,6 +103,9 @@ const userAvatar = computed(() => {
           rounded
         />
       </nav>
+
+      <!-- Mobile menu overlay -->
+      <div v-if="mobileMenuOpen" class="mobile-overlay" @click="closeMobileMenu"></div>
 
       <div class="user-section">
         <SearchBar v-if="authStore.isAuthenticated" />
@@ -228,5 +252,87 @@ const userAvatar = computed(() => {
 .profile-avatar.active::before {
   opacity: 1;
   transform: scale(1);
+}
+
+/* Hamburger button - hidden on desktop */
+.hamburger-button {
+  display: none;
+}
+
+/* Mobile overlay */
+.mobile-overlay {
+  display: none;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .header-container {
+    padding: 0 1rem;
+  }
+
+  .hamburger-button {
+    display: flex;
+    order: 3;
+  }
+
+  .nav-menu {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: var(--bgColor-default);
+    border-bottom: 1px solid var(--borderColor-default);
+    padding: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 99;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .nav-menu.mobile-open {
+    display: flex;
+  }
+
+  .nav-menu :deep(.base-button) {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 98;
+  }
+
+  .user-section {
+    order: 2;
+    gap: 0.5rem;
+  }
+
+  /* Hide search bar on mobile header */
+  .user-section :deep(.search-bar) {
+    display: none;
+  }
+
+  .logo {
+    order: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-container {
+    padding: 0 0.75rem;
+  }
+
+  /* Hide Connect to Spotify label on very small screens */
+  .user-section :deep(.base-button .label) {
+    display: none;
+  }
 }
 </style>
