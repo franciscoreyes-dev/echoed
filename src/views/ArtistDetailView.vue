@@ -7,6 +7,7 @@ import { usePlayerStore } from '../stores/player';
 import BaseButton from '../components/BaseButton.vue';
 import DataCard from '../components/DataCard.vue';
 import TrackItem from '../components/TrackItem.vue';
+import AlbumItem from '../components/AlbumItem.vue';
 
 interface Artist {
   id: string;
@@ -200,26 +201,15 @@ onMounted(() => {
       <!-- Discography -->
       <DataCard v-if="albums.length" title="Discography" icon="pi-th-large">
         <div class="albums-grid">
-          <RouterLink
+          <AlbumItem
             v-for="album in albums.slice(0, 12)"
             :key="album.id"
-            :to="`/album/${album.id}`"
-            class="album-card"
-          >
-            <img
-              v-if="album.images[0]"
-              :src="album.images[0].url"
-              :alt="album.name"
-              class="album-image"
-            />
-            <div v-else class="album-placeholder">
-              <i class="pi pi-image"></i>
-            </div>
-            <div class="album-info">
-              <span class="album-name">{{ album.name }}</span>
-              <span class="album-meta">{{ album.release_date?.split('-')[0] }} · {{ album.album_type }}</span>
-            </div>
-          </RouterLink>
+            :album-id="album.id"
+            :image="album.images[0]?.url"
+            :name="album.name"
+            :release-year="album.release_date?.split('-')[0]"
+            :album-type="album.album_type"
+          />
         </div>
       </DataCard>
 
@@ -354,61 +344,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 1rem;
-}
-
-.album-card {
-  display: flex;
-  flex-direction: column;
-  text-decoration: none;
-  padding: 0.75rem;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-}
-
-.album-card:hover {
-  background: var(--bgColor-muted);
-}
-
-.album-image {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 6px;
-  object-fit: cover;
-  margin-bottom: 0.75rem;
-}
-
-.album-placeholder {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 6px;
-  background: var(--bgColor-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.75rem;
-  color: var(--fgColor-muted);
-  font-size: 2rem;
-}
-
-.album-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.album-name {
-  font-weight: 500;
-  font-size: 0.9rem;
-  color: var(--fgColor-default);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.album-meta {
-  font-size: 0.75rem;
-  color: var(--fgColor-muted);
-  text-transform: capitalize;
 }
 
 @media (max-width: 600px) {

@@ -72,9 +72,14 @@ const fetchRecommendations = async () => {
     });
 
     recommendations.value = recsRes.data.tracks || [];
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Failed to fetch recommendations:', err);
-    error.value = 'Failed to load recommendations';
+    const axiosError = err as { response?: { status?: number } };
+    if (axiosError.response?.status === 404 || axiosError.response?.status === 403) {
+      error.value = 'Recommendations API is not available. Spotify has restricted this endpoint.';
+    } else {
+      error.value = 'Failed to load recommendations';
+    }
   } finally {
     isLoading.value = false;
   }

@@ -55,6 +55,15 @@ const userAvatar = computed(() => {
           rounded
         />
         <BaseButton
+          icon="pi pi-search"
+          label="Search"
+          :severity="isActive('search').value ? 'success' : 'secondary'"
+          @click="navigateTo('/search')"
+          size="small"
+          variant="outlined"
+          rounded
+        />
+        <BaseButton
           icon="pi pi-book"
           label="Library"
           :severity="isActive('library').value ? 'success' : 'secondary'"

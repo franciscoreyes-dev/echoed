@@ -3,22 +3,19 @@ import { computed, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
 import { spotifyClient } from '../services/spotify';
-import BaseButton from './BaseButton.vue';
 
 interface Props {
-  playlistId: string;
+  albumId: string;
   image?: string;
   name: string;
-  trackCount: number;
+  artists?: string;
+  releaseYear?: string;
+  albumType?: string;
 }
 
 const props = defineProps<Props>();
-
-const emit = defineEmits<{
-  delete: [playlistId: string];
-}>();
-
 const router = useRouter();
+
 const imageUrl = toRef(props, 'image');
 const { dominantColor } = useColorExtraction(imageUrl);
 
@@ -30,63 +27,55 @@ const hoverStyle = computed(() => {
 });
 
 const handleClick = () => {
-  router.push(`/playlist/${props.playlistId}`);
+  router.push(`/album/${props.albumId}`);
 };
 
 const handlePlayClick = async (event: Event) => {
   event.stopPropagation();
   try {
-    await spotifyClient.playContext(`spotify:playlist:${props.playlistId}`);
+    await spotifyClient.playContext(`spotify:album:${props.albumId}`);
   } catch (err) {
-    console.error('Failed to play playlist:', err);
+    console.error('Failed to play album:', err);
   }
-};
-
-const handleDelete = (event: Event) => {
-  event.stopPropagation();
-  emit('delete', props.playlistId);
 };
 </script>
 
 <template>
   <div
-    class="playlist-card"
+    class="album-item"
     :style="hoverStyle"
     :class="{ 'has-color': dominantColor }"
     @click="handleClick"
   >
-    <div class="playlist-image-wrapper">
+    <div class="album-image-wrapper">
       <img
         v-if="image"
         :src="image"
         :alt="name"
-        class="playlist-image"
+        class="album-image"
       />
-      <div v-else class="playlist-placeholder">
-        <i class="pi pi-music"></i>
+      <div v-else class="album-placeholder">
+        <i class="pi pi-image"></i>
       </div>
       <div class="play-overlay" @click="handlePlayClick">
         <i class="pi pi-play"></i>
       </div>
-      <BaseButton
-        icon="pi pi-trash"
-        severity="danger"
-        variant="text"
-        size="small"
-        @click="handleDelete"
-        aria-label="Delete playlist"
-        class="delete-btn"
-      />
     </div>
-    <div class="playlist-info">
-      <span class="playlist-name">{{ name }}</span>
-      <span class="playlist-meta">{{ trackCount }} tracks</span>
+    <div class="album-info">
+      <span class="album-name">{{ name }}</span>
+      <span class="album-meta">
+        <template v-if="releaseYear">{{ releaseYear }}</template>
+        <template v-if="releaseYear && (artists || albumType)"> · </template>
+        <template v-if="albumType">{{ albumType }}</template>
+        <template v-if="albumType && artists"> · </template>
+        <template v-if="artists">{{ artists }}</template>
+      </span>
     </div>
   </div>
 </template>
 
 <style scoped>
-.playlist-card {
+.album-item {
   display: flex;
   flex-direction: column;
   padding: 0.75rem;
@@ -96,31 +85,29 @@ const handleDelete = (event: Event) => {
   background: rgb(from var(--hover-bg) r g b / 0.05);
 }
 
-.playlist-card:hover {
+.album-item:hover {
   background: var(--bgColor-muted);
 }
 
-.playlist-card.has-color:hover {
+.album-item.has-color:hover {
   background: rgb(from var(--hover-bg) r g b / 0.2);
 }
 
-.playlist-image-wrapper {
+.album-image-wrapper {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
   margin-bottom: 0.75rem;
 }
 
-.playlist-image {
-  position: absolute;
-  inset: 0;
+.album-image {
   width: 100%;
   height: 100%;
   border-radius: 6px;
   object-fit: cover;
 }
 
-.playlist-placeholder {
+.album-placeholder {
   width: 100%;
   height: 100%;
   border-radius: 6px;
@@ -149,7 +136,7 @@ const handleDelete = (event: Event) => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.playlist-card:hover .play-overlay {
+.album-item:hover .play-overlay {
   opacity: 1;
   transform: translateY(0);
 }
@@ -164,27 +151,13 @@ const handleDelete = (event: Event) => {
   margin-left: 2px;
 }
 
-.delete-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
-  background: rgba(0, 0, 0, 0.6) !important;
-  border-radius: 50% !important;
-}
-
-.playlist-card:hover .delete-btn {
-  opacity: 1;
-}
-
-.playlist-info {
+.album-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.playlist-name {
+.album-name {
   font-weight: 500;
   font-size: 0.9rem;
   color: var(--fgColor-default);
@@ -193,8 +166,12 @@ const handleDelete = (event: Event) => {
   text-overflow: ellipsis;
 }
 
-.playlist-meta {
+.album-meta {
   font-size: 0.75rem;
   color: var(--fgColor-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
 }
 </style>

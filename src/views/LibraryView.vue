@@ -205,6 +205,12 @@ watch(
           <p>No playlists found</p>
         </div>
         <div v-else class="playlists-list">
+          <div class="new-playlist-card" @click="showCreateModal = true">
+            <div class="new-playlist-box">
+              <i class="pi pi-plus"></i>
+            </div>
+            <span class="new-playlist-label">New Playlist</span>
+          </div>
           <PlaylistCard
             v-for="playlist in libraryStore.playlists"
             :key="playlist.id"
@@ -454,10 +460,55 @@ watch(
 
 .playlists-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  max-height: 400px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  max-height: 500px;
   overflow-y: auto;
+}
+
+.new-playlist-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid var(--borderColor-default);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.new-playlist-card:hover {
+  border-color: var(--color-ansi-green-bright);
+  background: rgb(from var(--color-ansi-green-bright) r g b / 0.1);
+}
+
+.new-playlist-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.new-playlist-box i {
+  font-size: 2.5rem;
+  color: var(--fgColor-muted);
+  transition: color 0.2s;
+}
+
+.new-playlist-card:hover .new-playlist-box i {
+  color: var(--color-ansi-green-bright);
+}
+
+.new-playlist-label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--fgColor-muted);
+  transition: color 0.2s;
+}
+
+.new-playlist-card:hover .new-playlist-label {
+  color: var(--color-ansi-green-bright);
 }
 
 .list-container {

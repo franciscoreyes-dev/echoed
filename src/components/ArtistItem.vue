@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
+import { spotifyClient } from '../services/spotify';
 
 interface Props {
   artistId?: string;
@@ -30,6 +31,17 @@ const handleClick = () => {
     router.push(`/artist/${props.artistId}`);
   }
 };
+
+const handlePlayClick = async (event: Event) => {
+  event.stopPropagation();
+  if (props.artistId) {
+    try {
+      await spotifyClient.playContext(`spotify:artist:${props.artistId}`);
+    } catch (err) {
+      console.error('Failed to play artist:', err);
+    }
+  }
+};
 </script>
 
 <template>
@@ -40,12 +52,16 @@ const handleClick = () => {
     @click="handleClick"
   >
     <div v-if="rank" class="artist-rank">{{ rank }}</div>
-    <img
-      v-if="image"
-      :src="image"
-      :alt="name"
-      class="artist-image"
-    />
+    <div v-if="image" class="artist-image-wrapper">
+      <img
+        :src="image"
+        :alt="name"
+        class="artist-image"
+      />
+      <div class="play-overlay" @click="handlePlayClick">
+        <i class="pi pi-play"></i>
+      </div>
+    </div>
     <div class="artist-info">
       <div class="artist-name">{{ name }}</div>
       <div v-if="genres || followers" class="artist-meta">
@@ -89,12 +105,40 @@ const handleClick = () => {
   flex-shrink: 0;
 }
 
-.artist-image {
+.artist-image-wrapper {
+  position: relative;
   width: 64px;
   height: 64px;
+  flex-shrink: 0;
+}
+
+.artist-image {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  flex-shrink: 0;
+}
+
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.artist-image-wrapper:hover .play-overlay {
+  opacity: 1;
+}
+
+.play-overlay i {
+  color: white;
+  font-size: 1.25rem;
+  margin-left: 2px;
 }
 
 .artist-info {
