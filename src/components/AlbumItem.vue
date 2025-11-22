@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
 import { spotifyClient } from '../services/spotify';
+
+interface Artist {
+  id: string;
+  name: string;
+}
 
 interface Props {
   albumId: string;
   image?: string;
   name: string;
-  artists?: string;
+  artists?: Artist[];
   releaseYear?: string;
   albumType?: string;
 }
@@ -65,10 +70,18 @@ const handlePlayClick = async (event: Event) => {
       <span class="album-name">{{ name }}</span>
       <span class="album-meta">
         <template v-if="releaseYear">{{ releaseYear }}</template>
-        <template v-if="releaseYear && (artists || albumType)"> · </template>
+        <template v-if="releaseYear && (artists?.length || albumType)"> · </template>
         <template v-if="albumType">{{ albumType }}</template>
-        <template v-if="albumType && artists"> · </template>
-        <template v-if="artists">{{ artists }}</template>
+        <template v-if="albumType && artists?.length"> · </template>
+        <template v-if="artists?.length">
+          <template v-for="(artist, index) in artists" :key="artist.id">
+            <RouterLink
+              :to="`/artist/${artist.id}`"
+              class="artist-link"
+              @click.stop
+            >{{ artist.name }}</RouterLink><span v-if="index < artists.length - 1">, </span>
+          </template>
+        </template>
       </span>
     </div>
   </div>
@@ -173,5 +186,16 @@ const handlePlayClick = async (event: Event) => {
   overflow: hidden;
   text-overflow: ellipsis;
   text-transform: capitalize;
+}
+
+.artist-link {
+  color: var(--fgColor-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.artist-link:hover {
+  color: var(--color-ansi-green-bright);
+  text-decoration: underline;
 }
 </style>

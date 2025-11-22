@@ -74,7 +74,7 @@ const handleImageChange = (event: Event) => {
 
       // Convert to base64 JPEG (without data:image/jpeg;base64, prefix)
       const base64 = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
-      newPlaylistImage.value = base64;
+      newPlaylistImage.value = base64 ?? null;
     };
     img.src = reader.result as string;
   };
@@ -242,7 +242,7 @@ watch(
             :track-id="item.track.id"
             :image="item.track.album.images[item.track.album.images.length - 1]?.url"
             :title="item.track.name"
-            :artists="item.track.artists.map((a) => a.name).join(', ')"
+            :artists="item.track.artists"
             :album="item.track.album.name"
             :duration="playerStore.formatDuration(item.track.duration_ms)"
             show-info
@@ -263,7 +263,7 @@ watch(
             :track-id="track.id"
             :image="track.album.images[track.album.images.length - 1]?.url"
             :title="track.name"
-            :artists="track.artists.map((a) => a.name).join(', ')"
+            :artists="track.artists"
             :album="track.album.name"
             :duration="playerStore.formatDuration(track.duration_ms)"
             show-info

@@ -19,7 +19,7 @@ export function useTrackSaved() {
       const results = response.data as boolean[];
 
       uncheckedIds.forEach((id, index) => {
-        savedTracks.value.set(id, results[index]);
+        savedTracks.value.set(id, results[index] ?? false);
         pendingChecks.value.delete(id);
       });
     } catch (err) {

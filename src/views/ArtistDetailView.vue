@@ -159,6 +159,7 @@ const fetchConnections = async () => {
 
       results.forEach((result, index) => {
         const collab = batch[index];
+        if (!collab) return;
         if (result.status === 'fulfilled') {
           foundArtists.set(collab.id, {
             id: collab.id,
@@ -448,7 +449,7 @@ onMounted(() => {
                 :track-id="track.id"
                 :image="track.album.images[0]?.url"
                 :title="`${index + 1}. ${track.name}`"
-                :artists="track.artists.map(a => a.name).join(', ')"
+                :artists="track.artists"
                 :album="track.album.name"
                 :duration="playerStore.formatDuration(track.duration_ms)"
                 :show-info="true"

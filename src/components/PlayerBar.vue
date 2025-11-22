@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch, onMounted, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
 import { usePlayerStore } from '../stores/player';
 import { useAuthStore } from '../stores/auth';
 import BaseButton from './BaseButton.vue';
@@ -40,9 +40,6 @@ watch(
 
 // Computed for track info display
 const trackName = computed(() => currentTrack.value?.name || 'No track playing');
-const artistNames = computed(() =>
-  currentTrack.value?.artists.map(a => a.name).join(', ') || 'Connect to Spotify'
-);
 const albumImage = computed(() =>
   currentTrack.value?.album.images[0]?.url || null
 );
@@ -244,7 +241,17 @@ onUnmounted(() => {
         </div>
         <div class="track-details">
           <div class="track-name">{{ trackName }}</div>
-          <div class="track-artist">{{ artistNames }}</div>
+          <div class="track-artist">
+            <template v-if="currentTrack?.artists">
+              <template v-for="(artist, index) in currentTrack.artists" :key="artist.id">
+                <RouterLink
+                  :to="`/artist/${artist.id}`"
+                  class="artist-link"
+                >{{ artist.name }}</RouterLink><span v-if="index < currentTrack.artists.length - 1">, </span>
+              </template>
+            </template>
+            <template v-else>Connect to Spotify</template>
+          </div>
         </div>
       </div>
 
@@ -537,6 +544,17 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.artist-link {
+  color: var(--fgColor-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.artist-link:hover {
+  color: var(--color-ansi-green-bright);
+  text-decoration: underline;
 }
 
 /* Playback Controls */

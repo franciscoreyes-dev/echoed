@@ -351,7 +351,7 @@ export const usePlayerStore = defineStore('player', () => {
     try {
       const modes: Array<'off' | 'context' | 'track'> = ['off', 'context', 'track'];
       const currentIndex = modes.indexOf(repeatState.value);
-      const nextState = modes[(currentIndex + 1) % 3];
+      const nextState = modes[(currentIndex + 1) % 3] ?? 'off';
       await spotifyClient.setRepeat(nextState);
       repeatState.value = nextState;
     } catch (err) {

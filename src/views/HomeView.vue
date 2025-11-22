@@ -142,7 +142,7 @@ watch(
               :track-id="item.track.id"
               :image="item.track.album.images[item.track.album.images.length - 1]?.url"
               :title="item.track.name"
-              :artists="item.track.artists.map((a) => a.name).join(', ')"
+              :artists="item.track.artists"
               :album="item.track.album.name"
               :duration="playerStore.formatDuration(item.track.duration_ms)"
               :played-at="playerStore.formatPlayedAt(item.played_at)"

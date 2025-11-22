@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed, toRef, onMounted, watch, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
 import { useTrackSaved } from '../composables/useTrackSaved';
 import { usePlayerStore } from '../stores/player';
 import BaseButton from './BaseButton.vue';
 import AddToPlaylistModal from './AddToPlaylistModal.vue';
 
+interface Artist {
+  id: string;
+  name: string;
+}
+
 interface Props {
   trackId?: string;
   image?: string;
   title: string;
-  artists: string;
+  artists: Artist[];
   album?: string;
   duration?: string;
   playedAt?: string;
@@ -174,7 +179,15 @@ const handleAddToPlaylistClick = (event: Event) => {
         </div>
       </div>
       <div v-if="album || duration || playedAt" class="track-meta">
-        <div class="track-artist">{{ artists }}</div>
+        <div class="track-artist">
+          <template v-for="(artist, index) in artists" :key="artist.id">
+            <RouterLink
+              :to="`/artist/${artist.id}`"
+              class="artist-link"
+              @click.stop
+            >{{ artist.name }}</RouterLink><span v-if="index < artists.length - 1">, </span>
+          </template>
+        </div>
         <div v-if="duration">{{ duration }}</div>
       </div>
     </div>
@@ -333,6 +346,17 @@ const handleAddToPlaylistClick = (event: Event) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.artist-link {
+  color: var(--fgColor-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.artist-link:hover {
+  color: var(--color-ansi-green-bright);
+  text-decoration: underline;
 }
 
 .track-meta {

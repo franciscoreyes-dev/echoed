@@ -33,9 +33,9 @@ export function useColorExtraction(imageUrl: Ref<string | undefined>) {
           const colorCounts: Record<string, number> = {};
 
           for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
+            const r = data[i] ?? 0;
+            const g = data[i + 1] ?? 0;
+            const b = data[i + 2] ?? 0;
 
             // Skip very dark or very light colors
             const brightness = (r + g + b) / 3;
@@ -61,7 +61,10 @@ export function useColorExtraction(imageUrl: Ref<string | undefined>) {
             }
           }
 
-          const [r, g, b] = dominantRgb.split(',').map(Number);
+          const parts = dominantRgb.split(',').map(Number);
+          const r = parts[0] ?? 128;
+          const g = parts[1] ?? 128;
+          const b = parts[2] ?? 128;
           resolve(`rgb(${r}, ${g}, ${b})`);
         } catch {
           resolve('');

@@ -173,7 +173,7 @@ onMounted(() => {
             :track-id="track.id"
             :image="track.album.images[0]?.url"
             :title="track.name"
-            :artists="track.artists.map(a => a.name).join(', ')"
+            :artists="track.artists"
             :album="track.album.name"
             :duration="playerStore.formatDuration(track.duration_ms)"
             show-like

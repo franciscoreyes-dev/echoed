@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import * as echarts from 'echarts';
 import { useRouter } from 'vue-router';
 
@@ -131,10 +131,10 @@ const initChart = async () => {
       },
       label: {
         show: true,
-        position: 'bottom',
+        position: 'bottom' as const,
         distance: 10,
         fontSize: 14,
-        fontWeight: 'bold',
+        fontWeight: 'bold' as const,
         color: colors.textMuted
       }
     },
@@ -148,7 +148,7 @@ const initChart = async () => {
       },
       label: {
         show: true,
-        position: 'bottom',
+        position: 'bottom' as const,
         distance: 8,
         fontSize: 11,
         color: colors.textMuted

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { RouterLink } from 'vue-router';
 import { spotifyClient } from '../services/spotify';
 import { useAuthStore } from '../stores/auth';
 import { usePlayerStore } from '../stores/player';
@@ -38,7 +38,6 @@ interface Album {
   total_tracks: number;
 }
 
-const router = useRouter();
 const authStore = useAuthStore();
 const playerStore = usePlayerStore();
 
@@ -178,7 +177,7 @@ const hasResults = computed(() => {
             :track-id="track.id"
             :image="track.album.images[0]?.url"
             :title="track.name"
-            :artists="track.artists.map(a => a.name).join(', ')"
+            :artists="track.artists"
             :album="track.album.name"
             :duration="playerStore.formatDuration(track.duration_ms)"
             show-like
@@ -196,7 +195,7 @@ const hasResults = computed(() => {
             :album-id="album.id"
             :image="album.images[0]?.url"
             :name="album.name"
-            :artists="album.artists.map(a => a.name).join(', ')"
+            :artists="album.artists"
             :release-year="album.release_date?.split('-')[0]"
           />
         </div>

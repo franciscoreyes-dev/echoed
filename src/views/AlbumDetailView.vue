@@ -182,7 +182,7 @@ onMounted(() => {
             :key="track.id"
             :track-id="track.id"
             :title="track.name"
-            :artists="track.artists.map(a => a.name).join(', ')"
+            :artists="track.artists"
             :duration="playerStore.formatDuration(track.duration_ms)"
             show-like
           />
@@ -195,7 +195,7 @@ onMounted(() => {
             <span class="label">Label</span>
             <span class="value">{{ album.label }}</span>
           </div>
-          <div v-if="album.copyrights.length" class="info-item full-width">
+          <div v-if="album.copyrights[0]" class="info-item full-width">
             <span class="label">Copyright</span>
             <span class="value copyright">{{ album.copyrights[0].text }}</span>
           </div>
