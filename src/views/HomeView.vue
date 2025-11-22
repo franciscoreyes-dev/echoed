@@ -89,7 +89,7 @@ watch(
         </p>
         <BaseButton
           label="Connect to Spotify"
-          icon="pi pi-spotify"
+          icon="pi pi-link"
           severity="success"
           @click="handleLogin"
           size="large"
