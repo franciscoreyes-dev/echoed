@@ -313,6 +313,7 @@ const userAvatar = computed(() => {
   .user-section {
     order: 2;
     gap: 0.5rem;
+    margin-left: auto;
   }
 
   /* Hide search bar on mobile header */
