@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, toRef, onMounted, watch } from 'vue';
+import { computed, toRef, onMounted, watch, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
 import { useTrackSaved } from '../composables/useTrackSaved';
 import { usePlayerStore } from '../stores/player';
 import BaseButton from './BaseButton.vue';
+import AddToPlaylistModal from './AddToPlaylistModal.vue';
 
 interface Props {
   trackId?: string;
@@ -39,6 +40,7 @@ const imageUrl = toRef(props, 'image');
 const { dominantColor } = useColorExtraction(imageUrl);
 
 const isTrackSaved = computed(() => props.trackId ? isSaved(props.trackId) : false);
+const showAddToPlaylist = ref(false);
 
 onMounted(() => {
   if (props.showLike && props.trackId) {
@@ -94,6 +96,11 @@ const handleRemoveClick = (event: Event) => {
     emit('removed', props.trackId);
   }
 };
+
+const handleAddToPlaylistClick = (event: Event) => {
+  event.stopPropagation();
+  showAddToPlaylist.value = true;
+};
 </script>
 
 <template>
@@ -135,6 +142,16 @@ const handleRemoveClick = (event: Event) => {
             class="like-btn"
           />
           <BaseButton
+            v-if="showLike && trackId"
+            icon="pi pi-plus-circle"
+            severity="secondary"
+            variant="text"
+            size="small"
+            @click="handleAddToPlaylistClick"
+            aria-label="Add to playlist"
+            class="add-playlist-btn"
+          />
+          <BaseButton
             v-if="playlistId && trackId"
             icon="pi pi-trash"
             severity="danger"
@@ -161,6 +178,14 @@ const handleRemoveClick = (event: Event) => {
         <div v-if="duration">{{ duration }}</div>
       </div>
     </div>
+
+    <AddToPlaylistModal
+      v-if="showAddToPlaylist && trackId"
+      :track-id="trackId"
+      :track-name="title"
+      @close="showAddToPlaylist = false"
+      @added="showAddToPlaylist = false"
+    />
   </div>
 </template>
 
@@ -280,6 +305,7 @@ const handleRemoveClick = (event: Event) => {
 }
 
 .like-btn,
+.add-playlist-btn,
 .remove-btn,
 .spotify-btn {
   flex-shrink: 0;
@@ -288,6 +314,7 @@ const handleRemoveClick = (event: Event) => {
 }
 
 .track-item:hover .like-btn,
+.track-item:hover .add-playlist-btn,
 .track-item:hover .remove-btn,
 .track-item:hover .spotify-btn,
 .like-btn[class*="success"] {
@@ -295,6 +322,7 @@ const handleRemoveClick = (event: Event) => {
 }
 
 .track-item.has-color .like-btn:hover,
+.track-item.has-color .add-playlist-btn:hover,
 .track-item.has-color .remove-btn:hover,
 .track-item.has-color .spotify-btn:hover {
   background: rgb(from var(--hover-bg) r g b / 0.1) !important;

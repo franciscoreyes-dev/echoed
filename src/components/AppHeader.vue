@@ -3,6 +3,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { computed } from 'vue';
 import Avatar from 'primevue/avatar';
 import BaseButton from './BaseButton.vue';
+import SearchBar from './SearchBar.vue';
 import { useTheme } from '../composables/useTheme';
 import { useAuthStore } from '../stores/auth';
 
@@ -54,15 +55,6 @@ const userAvatar = computed(() => {
           rounded
         />
         <BaseButton
-          icon="pi pi-search"
-          label="Search"
-          :severity="isActive('search').value ? 'success' : 'secondary'"
-          @click="navigateTo('/search')"
-          size="small"
-          variant="outlined"
-          rounded
-        />
-        <BaseButton
           icon="pi pi-book"
           label="Library"
           :severity="isActive('library').value ? 'success' : 'secondary'"
@@ -83,6 +75,7 @@ const userAvatar = computed(() => {
       </nav>
 
       <div class="user-section">
+        <SearchBar v-if="authStore.isAuthenticated" />
         <BaseButton
           :icon="themeIcon"
           severity="secondary"
