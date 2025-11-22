@@ -47,8 +47,7 @@ npm install
 ```bash
 # Create .env file and add your Spotify API credentials
 VITE_SPOTIFY_CLIENT_ID=your_client_id
-VITE_SPOTIFY_CLIENT_SECRET=your_client_secret
-VITE_REDIRECT_URI=http://localhost:5173/callback
+VITE_SPOTIFY_REDIRECT_URI=http://localhost:5173/callback
 ```
 
 4. Start the development server
