@@ -298,15 +298,17 @@ const handleAddToPlaylistClick = (event: Event) => {
 }
 
 .like-btn,
-.add-playlist-btn,
 .remove-btn {
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
+.add-playlist-btn {
+  flex-shrink: 0;
+}
+
 .track-item:hover .like-btn,
-.track-item:hover .add-playlist-btn,
 .track-item:hover .remove-btn,
 .like-btn[class*="success"] {
   opacity: 1;
