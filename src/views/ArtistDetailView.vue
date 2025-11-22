@@ -72,6 +72,17 @@ const showGraph = ref(false);
 const connectedArtists = ref<ConnectedArtist[]>([]);
 const connections = ref<Connection[]>([]);
 const isLoadingConnections = ref(false);
+const isFullscreen = ref(false);
+
+const openFullscreen = () => {
+  isFullscreen.value = true;
+  document.body.style.overflow = 'hidden';
+};
+
+const closeFullscreen = () => {
+  isFullscreen.value = false;
+  document.body.style.overflow = '';
+};
 
 const centerArtist = computed(() => {
   if (!artist.value) return { id: '', name: '', image: '' };
@@ -479,12 +490,21 @@ onMounted(() => {
     <div class="graph-panel">
       <div class="graph-header">
         <h2>Artist Connections</h2>
-        <BaseButton
-          icon="pi pi-times"
-          severity="secondary"
-          variant="text"
-          @click="closeGraph"
-        />
+        <div class="graph-header-actions">
+          <BaseButton
+            icon="pi pi-expand"
+            severity="secondary"
+            variant="text"
+            @click="openFullscreen"
+            aria-label="Fullscreen"
+          />
+          <BaseButton
+            icon="pi pi-times"
+            severity="secondary"
+            variant="text"
+            @click="closeGraph"
+          />
+        </div>
       </div>
       <div v-if="connectedArtists.length === 0" class="empty-connections">
         <i class="pi pi-info-circle"></i>
@@ -497,6 +517,30 @@ onMounted(() => {
         :connections="connections"
       />
     </div>
+
+    <!-- Fullscreen Graph Modal -->
+    <Teleport to="body">
+      <div v-if="isFullscreen" class="fullscreen-overlay" @click.self="closeFullscreen">
+        <div class="fullscreen-chart-container">
+          <div class="fullscreen-header">
+            <h2>Artist Connections</h2>
+            <BaseButton
+              icon="pi pi-times"
+              variant="text"
+              severity="secondary"
+              @click="closeFullscreen"
+            />
+          </div>
+          <div class="fullscreen-chart">
+            <ArtistGraph
+              :center-artist="centerArtist"
+              :connected-artists="connectedArtists"
+              :connections="connections"
+            />
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -540,11 +584,6 @@ onMounted(() => {
   flex-direction: column;
 }
 
-.graph-open .tracks-list,
-.graph-open .albums-grid {
-  display: none;
-}
-
 .graph-panel {
   flex: 0;
   overflow: hidden;
@@ -570,6 +609,12 @@ onMounted(() => {
 .graph-header h2 {
   margin: 0;
   font-size: 1.25rem;
+}
+
+.graph-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   color: var(--fgColor-default);
 }
 
@@ -782,5 +827,58 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
   }
+}
+</style>
+
+<style>
+/* Fullscreen overlay styles (unscoped for Teleport) */
+.fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.fullscreen-chart-container {
+  background: var(--bgColor-default);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 1200px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fullscreen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--borderColor-default);
+}
+
+.fullscreen-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--fgColor-default);
+}
+
+.fullscreen-chart {
+  flex: 1;
+  padding: 1rem;
+  min-height: 0;
+}
+
+.fullscreen-chart .artist-graph {
+  height: 100%;
 }
 </style>
