@@ -21,7 +21,6 @@ interface Props {
   duration?: string;
   playedAt?: string;
   showInfo?: boolean;
-  spotifyUrl?: string;
   draggable?: boolean;
   index?: number;
   showLike?: boolean;
@@ -76,15 +75,6 @@ const handlePlayClick = (event: Event) => {
   event.stopPropagation();
   if (props.trackId) {
     playerStore.playTrack(props.trackId);
-  }
-};
-
-const handleSpotifyClick = (event: Event) => {
-  event.stopPropagation();
-  if (props.spotifyUrl) {
-    window.open(props.spotifyUrl, '_blank');
-  } else if (props.trackId) {
-    window.open(`https://open.spotify.com/track/${props.trackId}`, '_blank');
   }
 };
 
@@ -165,16 +155,6 @@ const handleAddToPlaylistClick = (event: Event) => {
             @click="handleRemoveClick"
             aria-label="Remove from playlist"
             class="remove-btn"
-          />
-          <BaseButton
-            v-if="showInfo && trackId"
-            label="Open on Spotify"
-            severity="secondary"
-            variant="text"
-            size="small"
-            @click="handleSpotifyClick"
-            aria-label="Open on Spotify"
-            class="spotify-btn"
           />
         </div>
       </div>
@@ -319,8 +299,7 @@ const handleAddToPlaylistClick = (event: Event) => {
 
 .like-btn,
 .add-playlist-btn,
-.remove-btn,
-.spotify-btn {
+.remove-btn {
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.2s;
@@ -329,15 +308,13 @@ const handleAddToPlaylistClick = (event: Event) => {
 .track-item:hover .like-btn,
 .track-item:hover .add-playlist-btn,
 .track-item:hover .remove-btn,
-.track-item:hover .spotify-btn,
 .like-btn[class*="success"] {
   opacity: 1;
 }
 
 .track-item.has-color .like-btn:hover,
 .track-item.has-color .add-playlist-btn:hover,
-.track-item.has-color .remove-btn:hover,
-.track-item.has-color .spotify-btn:hover {
+.track-item.has-color .remove-btn:hover {
   background: rgb(from var(--hover-bg) r g b / 0.1) !important;
 }
 
