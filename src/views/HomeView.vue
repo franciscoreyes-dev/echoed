@@ -147,6 +147,7 @@ watch(
               :duration="playerStore.formatDuration(item.track.duration_ms)"
               :played-at="playerStore.formatPlayedAt(item.played_at)"
               show-info
+              show-like
             />
           </div>
         </DataCard>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue';
+import { computed, toRef, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useColorExtraction } from '../composables/useColorExtraction';
+import { useTrackSaved } from '../composables/useTrackSaved';
 import { usePlayerStore } from '../stores/player';
 import BaseButton from './BaseButton.vue';
 
@@ -17,17 +18,39 @@ interface Props {
   spotifyUrl?: string;
   draggable?: boolean;
   index?: number;
+  showLike?: boolean;
+  playlistId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showInfo: false,
-  draggable: false
+  draggable: false,
+  showLike: false
 });
+
+const emit = defineEmits<{
+  removed: [trackId: string];
+}>();
 
 const router = useRouter();
 const playerStore = usePlayerStore();
+const { checkIfSaved, isSaved, toggleSaved } = useTrackSaved();
 const imageUrl = toRef(props, 'image');
 const { dominantColor } = useColorExtraction(imageUrl);
+
+const isTrackSaved = computed(() => props.trackId ? isSaved(props.trackId) : false);
+
+onMounted(() => {
+  if (props.showLike && props.trackId) {
+    checkIfSaved([props.trackId]);
+  }
+});
+
+watch(() => props.trackId, (newId) => {
+  if (props.showLike && newId) {
+    checkIfSaved([newId]);
+  }
+});
 
 const hoverStyle = computed(() => {
   if (!dominantColor.value) return {};
@@ -55,6 +78,20 @@ const handleSpotifyClick = (event: Event) => {
     window.open(props.spotifyUrl, '_blank');
   } else if (props.trackId) {
     window.open(`https://open.spotify.com/track/${props.trackId}`, '_blank');
+  }
+};
+
+const handleLikeClick = async (event: Event) => {
+  event.stopPropagation();
+  if (props.trackId) {
+    await toggleSaved(props.trackId);
+  }
+};
+
+const handleRemoveClick = (event: Event) => {
+  event.stopPropagation();
+  if (props.trackId) {
+    emit('removed', props.trackId);
   }
 };
 </script>
@@ -86,16 +123,38 @@ const handleSpotifyClick = (event: Event) => {
     <div class="track-info">
       <div class="track-name-row">
         <div class="track-name">{{ title }}</div>
-        <BaseButton
-          v-if="showInfo && trackId"
-          label="Open on Spotify"
-          severity="secondary"
-          variant="text"
-          size="small"
-          @click="handleSpotifyClick"
-          aria-label="Open on Spotify"
-          class="spotify-btn"
-        />
+        <div class="track-actions">
+          <BaseButton
+            v-if="showLike && trackId"
+            :icon="isTrackSaved ? 'pi pi-heart-fill' : 'pi pi-heart'"
+            :severity="isTrackSaved ? 'success' : 'secondary'"
+            variant="text"
+            size="small"
+            @click="handleLikeClick"
+            :aria-label="isTrackSaved ? 'Remove from Liked Songs' : 'Add to Liked Songs'"
+            class="like-btn"
+          />
+          <BaseButton
+            v-if="playlistId && trackId"
+            icon="pi pi-trash"
+            severity="danger"
+            variant="text"
+            size="small"
+            @click="handleRemoveClick"
+            aria-label="Remove from playlist"
+            class="remove-btn"
+          />
+          <BaseButton
+            v-if="showInfo && trackId"
+            label="Open on Spotify"
+            severity="secondary"
+            variant="text"
+            size="small"
+            @click="handleSpotifyClick"
+            aria-label="Open on Spotify"
+            class="spotify-btn"
+          />
+        </div>
       </div>
       <div v-if="album || duration || playedAt" class="track-meta">
         <div class="track-artist">{{ artists }}</div>
@@ -213,10 +272,30 @@ const handleSpotifyClick = (event: Event) => {
   text-overflow: ellipsis;
 }
 
-.spotify-btn {
+.track-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   flex-shrink: 0;
 }
 
+.like-btn,
+.remove-btn,
+.spotify-btn {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.track-item:hover .like-btn,
+.track-item:hover .remove-btn,
+.track-item:hover .spotify-btn,
+.like-btn[class*="success"] {
+  opacity: 1;
+}
+
+.track-item.has-color .like-btn:hover,
+.track-item.has-color .remove-btn:hover,
 .track-item.has-color .spotify-btn:hover {
   background: rgb(from var(--hover-bg) r g b / 0.1) !important;
 }

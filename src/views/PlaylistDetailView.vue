@@ -141,6 +141,31 @@ const onDragChange = async (event: { moved?: { oldIndex: number; newIndex: numbe
   }
 };
 
+const handleTrackRemoved = async (trackId: string) => {
+  if (!playlist.value) return;
+
+  const trackUri = `spotify:track:${trackId}`;
+
+  // Optimistically remove from UI
+  const trackIndex = tracks.value.findIndex(t => t.track?.id === trackId);
+  const removedTrack = tracks.value[trackIndex];
+  if (trackIndex !== -1) {
+    tracks.value.splice(trackIndex, 1);
+  }
+
+  try {
+    await spotifyClient.removeTracksFromPlaylist(playlist.value.id, [trackUri]);
+    // Clear cache so next load gets fresh data
+    apiCache.delete(`playlist-detail-${playlist.value.id}`);
+  } catch (err) {
+    console.error('Failed to remove track from playlist:', err);
+    // Revert on error
+    if (removedTrack && trackIndex !== -1) {
+      tracks.value.splice(trackIndex, 0, removedTrack);
+    }
+  }
+};
+
 onMounted(() => {
   fetchPlaylistData();
 });
@@ -255,6 +280,9 @@ onMounted(() => {
               :duration="playerStore.formatDuration(item.track.duration_ms)"
               :show-info="true"
               :draggable="true"
+              :show-like="true"
+              :playlist-id="playlist?.id"
+              @removed="handleTrackRemoved"
             />
           </template>
         </draggable>

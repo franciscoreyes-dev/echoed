@@ -240,6 +240,7 @@ watch(
             :album="item.track.album.name"
             :duration="playerStore.formatDuration(item.track.duration_ms)"
             show-info
+            show-like
           />
         </div>
       </DataCard>
@@ -260,6 +261,7 @@ watch(
             :album="track.album.name"
             :duration="playerStore.formatDuration(track.duration_ms)"
             show-info
+            show-like
           />
         </div>
       </DataCard>

@@ -122,6 +122,38 @@ export const spotifyClient = {
     spotifyApi.get('/me/tracks', { params: { limit: 1 } }),
 
   /**
+   * Check if tracks are saved in user's library
+   */
+  checkSavedTracks: (trackIds: string[]) =>
+    spotifyApi.get('/me/tracks/contains', { params: { ids: trackIds.join(',') } }),
+
+  /**
+   * Save tracks to user's library
+   */
+  saveTracks: (trackIds: string[]) =>
+    spotifyApi.put('/me/tracks', { ids: trackIds }),
+
+  /**
+   * Remove tracks from user's library
+   */
+  removeSavedTracks: (trackIds: string[]) =>
+    spotifyApi.delete('/me/tracks', { data: { ids: trackIds } }),
+
+  /**
+   * Add tracks to a playlist
+   */
+  addTracksToPlaylist: (playlistId: string, trackUris: string[]) =>
+    spotifyApi.post(`/playlists/${playlistId}/tracks`, { uris: trackUris }),
+
+  /**
+   * Remove tracks from a playlist
+   */
+  removeTracksFromPlaylist: (playlistId: string, trackUris: string[]) =>
+    spotifyApi.delete(`/playlists/${playlistId}/tracks`, {
+      data: { tracks: trackUris.map(uri => ({ uri })) }
+    }),
+
+  /**
    * Get user's playlists count (total only)
    */
   getPlaylistsCount: () =>
