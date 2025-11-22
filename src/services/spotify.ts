@@ -354,6 +354,17 @@ export const spotifyClient = {
   getArtist: (artistId: string) => spotifyApi.get(`/artists/${artistId}`),
 
   /**
+   * Get an album by ID
+   */
+  getAlbum: (albumId: string) => spotifyApi.get(`/albums/${albumId}`),
+
+  /**
+   * Get album tracks
+   */
+  getAlbumTracks: (albumId: string, limit = 50) =>
+    spotifyApi.get(`/albums/${albumId}/tracks`, { params: { limit } }),
+
+  /**
    * Get artist's top tracks
    */
   getArtistTopTracks: (artistId: string, market = 'US') =>
@@ -370,4 +381,34 @@ export const spotifyClient = {
    */
   getArtistAlbums: (artistId: string, limit = 20) =>
     spotifyApi.get(`/artists/${artistId}/albums`, { params: { limit, include_groups: 'album,single' } }),
+
+  /**
+   * Get recommendations based on seeds
+   */
+  getRecommendations: (params: {
+    seed_artists?: string[];
+    seed_tracks?: string[];
+    seed_genres?: string[];
+    limit?: number;
+  }) => {
+    const queryParams: Record<string, string | number> = {
+      limit: params.limit || 20
+    };
+    if (params.seed_artists?.length) {
+      queryParams.seed_artists = params.seed_artists.join(',');
+    }
+    if (params.seed_tracks?.length) {
+      queryParams.seed_tracks = params.seed_tracks.join(',');
+    }
+    if (params.seed_genres?.length) {
+      queryParams.seed_genres = params.seed_genres.join(',');
+    }
+    return spotifyApi.get('/recommendations', { params: queryParams });
+  },
+
+  /**
+   * Get available genre seeds for recommendations
+   */
+  getAvailableGenreSeeds: () =>
+    spotifyApi.get('/recommendations/available-genre-seeds'),
 };

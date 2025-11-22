@@ -33,6 +33,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Statistics Deep Dive' }
   },
   {
+    path: '/recommendations',
+    name: 'recommendations',
+    component: () => import('../views/RecommendationsView.vue'),
+    meta: { title: 'Recommendations' }
+  },
+  {
     path: '/track/:id',
     name: 'track-detail',
     component: () => import('../views/TrackDetailView.vue'),
@@ -43,6 +49,12 @@ const routes: RouteRecordRaw[] = [
     name: 'artist-detail',
     component: () => import('../views/ArtistDetailView.vue'),
     meta: { title: 'Artist Details' }
+  },
+  {
+    path: '/album/:id',
+    name: 'album-detail',
+    component: () => import('../views/AlbumDetailView.vue'),
+    meta: { title: 'Album Details' }
   },
   {
     path: '/playlist/:id',

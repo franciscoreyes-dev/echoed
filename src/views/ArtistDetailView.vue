@@ -30,12 +30,22 @@ interface Track {
   popularity: number;
 }
 
+interface Album {
+  id: string;
+  name: string;
+  images: { url: string }[];
+  release_date: string;
+  album_type: string;
+  total_tracks: number;
+}
+
 const route = useRoute();
 const router = useRouter();
 const playerStore = usePlayerStore();
 
 const artist = ref<Artist | null>(null);
 const topTracks = ref<Track[]>([]);
+const albums = ref<Album[]>([]);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
@@ -48,27 +58,31 @@ const fetchArtistData = async () => {
   }
 
   const cacheKey = `artist-${artistId}`;
-  const cached = apiCache.get<{ artist: Artist; topTracks: Track[] }>(cacheKey);
+  const cached = apiCache.get<{ artist: Artist; topTracks: Track[]; albums: Album[] }>(cacheKey);
 
   if (cached) {
     artist.value = cached.artist;
     topTracks.value = cached.topTracks;
+    albums.value = cached.albums;
     isLoading.value = false;
     return;
   }
 
   try {
-    const [artistRes, tracksRes] = await Promise.all([
+    const [artistRes, tracksRes, albumsRes] = await Promise.all([
       spotifyClient.getArtist(artistId),
-      spotifyClient.getArtistTopTracks(artistId)
+      spotifyClient.getArtistTopTracks(artistId),
+      spotifyClient.getArtistAlbums(artistId, 50)
     ]);
 
     artist.value = artistRes.data;
     topTracks.value = tracksRes.data.tracks || [];
+    albums.value = albumsRes.data.items || [];
 
     apiCache.set(cacheKey, {
       artist: artist.value,
-      topTracks: topTracks.value
+      topTracks: topTracks.value,
+      albums: albums.value
     }, 300000); // 5 min
   } catch (err) {
     console.error('Failed to fetch artist data:', err);
@@ -182,6 +196,33 @@ onMounted(() => {
           />
         </div>
       </DataCard>
+
+      <!-- Discography -->
+      <DataCard v-if="albums.length" title="Discography" icon="pi-th-large">
+        <div class="albums-grid">
+          <RouterLink
+            v-for="album in albums.slice(0, 12)"
+            :key="album.id"
+            :to="`/album/${album.id}`"
+            class="album-card"
+          >
+            <img
+              v-if="album.images[0]"
+              :src="album.images[0].url"
+              :alt="album.name"
+              class="album-image"
+            />
+            <div v-else class="album-placeholder">
+              <i class="pi pi-image"></i>
+            </div>
+            <div class="album-info">
+              <span class="album-name">{{ album.name }}</span>
+              <span class="album-meta">{{ album.release_date?.split('-')[0] }} · {{ album.album_type }}</span>
+            </div>
+          </RouterLink>
+        </div>
+      </DataCard>
+
     </div>
   </div>
 </template>
@@ -309,6 +350,67 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
+.albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.album-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.album-card:hover {
+  background: var(--bgColor-muted);
+}
+
+.album-image {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  object-fit: cover;
+  margin-bottom: 0.75rem;
+}
+
+.album-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: var(--bgColor-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  color: var(--fgColor-muted);
+  font-size: 2rem;
+}
+
+.album-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.album-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--fgColor-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.album-meta {
+  font-size: 0.75rem;
+  color: var(--fgColor-muted);
+  text-transform: capitalize;
+}
+
 @media (max-width: 600px) {
   .artist-header {
     flex-direction: column;
@@ -332,16 +434,6 @@ onMounted(() => {
 
   .genres {
     justify-content: center;
-  }
-
-  .related-artists {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .related-image,
-  .related-placeholder {
-    width: 80px;
-    height: 80px;
   }
 }
 </style>
