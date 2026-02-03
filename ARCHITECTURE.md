@@ -179,7 +179,7 @@ Rooms are ephemeral. Chat and queues reset when a room closes. An in-memory `Map
 ## Build Checklist
 
 - [x] 1. Project scaffolding — Vite + Vue 3 + shadcn/vue + Tailwind (frontend), Express + Socket.io (backend)
-- [ ] 2. Spotify OAuth — PKCE flow end-to-end, token exchange via backend
+- [x] 2. Spotify OAuth — PKCE flow end-to-end, token exchange via backend
 - [ ] 3. Playback SDK — Initialize player in browser, basic play/pause
 - [ ] 4. Room system — Create/join via Socket.io, in-memory state
 - [ ] 5. Sync engine — Server-driven position broadcast + client-side drift correction
