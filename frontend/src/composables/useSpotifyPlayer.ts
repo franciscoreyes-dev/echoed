@@ -3,6 +3,7 @@ import { usePlayerStore } from '@/stores/player'
 import type { TrackInfo } from '@/stores/player'
 
 let player: Spotify.Player | null = null
+let statePoller: ReturnType<typeof setInterval> | null = null
 
 function loadSDKScript(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -55,20 +56,25 @@ export function useSpotifyPlayer() {
     player.on('ready', async ({ device_id }) => {
       playerStore.deviceId = device_id
 
-      // player-state-changed only becomes available after ready fires
-      player!.on('player-state-changed', (state) => {
-        playerStore.currentTrack = parseTrack(state)
+      // player-state-changed is unreliable in the SDK; poll getCurrentState instead
+      const syncState = async (): Promise<void> => {
+        if (!player) return
+        const state = await player.getCurrentState()
+        if (!state) {
+          playerStore.currentTrack = null
+          return
+        }
+        const track = parseTrack(state)
+        // only reset position on track change to let the Player ticker stay smooth
+        if (playerStore.currentTrack?.uri !== track.uri) {
+          playerStore.positionMs = state.position
+        }
+        playerStore.currentTrack = track
         playerStore.isPlaying = !state.paused
-        playerStore.positionMs = state.position
-      })
-
-      // sync initial state in case something was already playing
-      const state = await player!.getCurrentState()
-      if (state) {
-        playerStore.currentTrack = parseTrack(state)
-        playerStore.isPlaying = !state.paused
-        playerStore.positionMs = state.position
       }
+
+      await syncState()
+      statePoller = setInterval(syncState, 1000)
     })
 
     player.on('not_ready', () => {
@@ -107,6 +113,10 @@ export function useSpotifyPlayer() {
   }
 
   function destroy(): void {
+    if (statePoller !== null) {
+      clearInterval(statePoller)
+      statePoller = null
+    }
     if (!player) return
     player.disconnect()
     player = null
