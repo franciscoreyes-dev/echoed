@@ -1,8 +1,10 @@
 import { io } from 'socket.io-client'
 import type { Socket } from 'socket.io-client'
 import { useRoomStore } from '@/stores/room'
+import { usePlayerStore } from '@/stores/player'
 import { useRouter } from 'vue-router'
 import type { RoomMember } from '@/stores/room'
+import type { TrackInfo } from '@/stores/player'
 
 interface RoomResponse {
   code: string
@@ -13,10 +15,27 @@ interface ErrorResponse {
   error: string
 }
 
+interface SyncPayload {
+  track: TrackInfo | null
+  positionMs: number
+  isPlaying: boolean
+  timestamp: number
+}
+
+interface SyncData {
+  track: TrackInfo | null
+  positionMs: number
+  isPlaying: boolean
+}
+
+type SyncCallback = (data: SyncData) => void
+
 let socket: Socket | null = null
+let syncCallback: SyncCallback | null = null
 
 export function useSocket() {
   const roomStore = useRoomStore()
+  const playerStore = usePlayerStore()
   const router = useRouter()
 
   function ensureSocket(): Socket {
@@ -31,8 +50,37 @@ export function useSocket() {
         roomStore.reset()
         router.push('/lobby')
       })
+
+      socket.on('player:sync', (payload: SyncPayload) => {
+        // Calculate expected position accounting for network latency
+        const latency = Date.now() - payload.timestamp
+        const expectedPosition = payload.positionMs + (payload.isPlaying ? latency : 0)
+
+        // Update player store
+        playerStore.currentTrack = payload.track
+        playerStore.isPlaying = payload.isPlaying
+        playerStore.positionMs = expectedPosition
+
+        // Call sync callback for non-hosts to control their player
+        if (!roomStore.isHost && syncCallback) {
+          syncCallback({
+            track: payload.track,
+            positionMs: expectedPosition,
+            isPlaying: payload.isPlaying,
+          })
+        }
+      })
     }
     return socket
+  }
+
+  function onSync(callback: SyncCallback): void {
+    syncCallback = callback
+  }
+
+  function emitPlayerState(track: TrackInfo | null, positionMs: number, isPlaying: boolean): void {
+    if (!socket || !roomStore.isHost) return
+    socket.emit('player:state-change', { track, positionMs, isPlaying })
   }
 
   async function createRoom(spotifyId: string, displayName: string): Promise<string> {
@@ -81,5 +129,5 @@ export function useSocket() {
     roomStore.reset()
   }
 
-  return { createRoom, joinRoom, leaveRoom, disconnect }
+  return { createRoom, joinRoom, leaveRoom, disconnect, onSync, emitPlayerState }
 }

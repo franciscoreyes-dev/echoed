@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref<string | null>(null)
   const userId = ref<string | null>(null)
   const displayName = ref<string | null>(null)
+  const isRestoring = ref<boolean>(false)
 
   function setAuth(token: string, id: string, name: string): void {
     accessToken.value = token
@@ -18,5 +19,5 @@ export const useAuthStore = defineStore('auth', () => {
     displayName.value = null
   }
 
-  return { accessToken, userId, displayName, setAuth, clear }
+  return { accessToken, userId, displayName, isRestoring, setAuth, clear }
 })

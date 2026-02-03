@@ -1,6 +1,7 @@
 import type { Server, Socket } from 'socket.io'
 import { createRoom, getRoom, deleteRoom, getRoomBySocketId } from '../state/rooms'
 import type { RoomMember } from '../state/rooms'
+import { stopSyncInterval } from './playerHandlers'
 
 interface CreatePayload {
   spotifyId: string
@@ -82,6 +83,18 @@ export function registerRoomHandlers(io: Server, socket: Socket): void {
 
     io.to(code).emit('room:members', { members: serializeMembers(room.members) })
 
+    // Send current playback state to the new member
+    if (room.currentTrack) {
+      const elapsed = Date.now() - room.lastSyncTimestamp
+      const currentPosition = room.isPlaying ? room.positionMs + elapsed : room.positionMs
+      socket.emit('player:sync', {
+        track: room.currentTrack,
+        positionMs: currentPosition,
+        isPlaying: room.isPlaying,
+        timestamp: Date.now(),
+      })
+    }
+
     cb({ code, members: serializeMembers(room.members) })
   })
 
@@ -105,6 +118,7 @@ function handleLeave(io: Server, socket: Socket): void {
   socket.leave(room.code)
 
   if (isHost || room.members.size === 0) {
+    stopSyncInterval(room.code)
     io.to(room.code).emit('room:closed')
     deleteRoom(room.code)
   } else {

@@ -4,6 +4,64 @@ import { useRouter } from 'vue-router'
 const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize'
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1'
 
+interface SpotifyProfile {
+  id: string
+  display_name: string
+  product: string
+}
+
+// Standalone function for use in navigation guards (outside component context)
+export async function tryRestoreSession(): Promise<boolean> {
+  const authStore = useAuthStore()
+
+  // If already authenticated, no need to restore
+  if (authStore.accessToken) {
+    return true
+  }
+
+  const refreshToken = sessionStorage.getItem('spotify_refresh_token')
+  if (!refreshToken) {
+    return false
+  }
+
+  authStore.isRestoring = true
+
+  try {
+    const tokenRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+
+    if (!tokenRes.ok) {
+      sessionStorage.removeItem('spotify_refresh_token')
+      sessionStorage.removeItem('spotify_token_expiry')
+      return false
+    }
+
+    const tokens: { access_token: string; expires_in: number } = await tokenRes.json()
+
+    const profileRes = await fetch(`${SPOTIFY_API_URL}/me`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    })
+
+    if (!profileRes.ok) {
+      return false
+    }
+
+    const profile: SpotifyProfile = await profileRes.json()
+
+    authStore.setAuth(tokens.access_token, profile.id, profile.display_name)
+    sessionStorage.setItem('spotify_token_expiry', String(Date.now() + tokens.expires_in * 1000))
+
+    return true
+  } catch {
+    return false
+  } finally {
+    authStore.isRestoring = false
+  }
+}
+
 const SCOPES = [
   'user-read-private',
   'user-read-email',
@@ -35,12 +93,6 @@ interface TokenResponse {
   access_token: string
   refresh_token: string
   expires_in: number
-}
-
-interface SpotifyProfile {
-  id: string
-  display_name: string
-  product: string
 }
 
 export function useAuth() {

@@ -137,6 +137,13 @@ User clicks "Login"
   → Backend returns both tokens to frontend
   → Frontend stores access_token in Pinia; refresh_token + expiry in sessionStorage
   → Frontend redirects to /lobby, which initializes Playback SDK on mount
+
+On page reload (session restoration):
+  → Router guard detects protected route (/lobby, /room)
+  → Checks for refresh_token in sessionStorage
+  → POSTs to /auth/refresh to get new access_token
+  → Fetches user profile, restores Pinia state
+  → Navigation continues; shows "Restoring session..." during wait
 ```
 
 ### 2. Room + Tight Sync (< 500ms)
@@ -144,13 +151,14 @@ User clicks "Login"
 ```
 Host creates room → backend assigns code, stores room in memory
   → Host's Playback SDK registers as a device
-  → Host plays a track → backend calls Spotify Web API on host's device
-  → All clients receive "track:update" via Socket.io:
-      { uri, positionMs, timestamp (server clock) }
-  → Each client calculates: expectedPosition = positionMs + (Date.now() - timestamp)
-  → Each client's Playback SDK seeks to expectedPosition
-  → Every 5s backend re-broadcasts position → clients auto-correct
-  → Drift stays under 500ms
+  → Host plays a track → frontend detects state change, emits "player:state-change"
+  → Backend updates room state, broadcasts "player:sync" to all:
+      { track, positionMs, isPlaying, timestamp (server clock) }
+  → Each non-host client calculates: expectedPosition = positionMs + latency
+  → Non-host starts same track via Spotify API, seeks to expectedPosition
+  → Every 5s (while playing) backend re-broadcasts position → clients auto-correct
+  → Drift correction: only seeks if drift > 500ms to avoid audio glitches
+  → New members joining receive current playback state immediately
 ```
 
 ### 3. Queue
@@ -186,7 +194,7 @@ Rooms are ephemeral. Chat and queues reset when a room closes. An in-memory `Map
 - [x] 2. Spotify OAuth — PKCE flow end-to-end, token exchange via backend
 - [x] 3. Playback SDK — Initialize player in browser, basic play/pause/seek
 - [x] 4. Room system — Create/join via Socket.io, in-memory state
-- [ ] 5. Sync engine — Server-driven position broadcast + client-side drift correction
+- [x] 5. Sync engine — Server-driven position broadcast + client-side drift correction
 - [ ] 6. Queue — Search API + shared queue management
 - [ ] 7. Chat — Real-time messaging in the room
 - [ ] 8. UI polish — Minimal/clean theme, transitions, sync status indicator
