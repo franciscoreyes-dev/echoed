@@ -1,10 +1,27 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { usePlayerStore } from '@/stores/player'
 import { useAuth } from '@/composables/useAuth'
+import { useSpotifyPlayer } from '@/composables/useSpotifyPlayer'
 import { Button } from '@/components/ui/button'
+import Player from '@/components/Player.vue'
 
 const authStore = useAuthStore()
+const playerStore = usePlayerStore()
 const { logout } = useAuth()
+const { initialize, transferPlayback, destroy } = useSpotifyPlayer()
+
+onMounted(() => {
+  initialize().catch(() => {
+    console.error('Failed to initialize Spotify player')
+  })
+})
+
+function handleLogout(): void {
+  destroy()
+  logout()
+}
 </script>
 
 <template>
@@ -26,8 +43,17 @@ const { logout } = useAuth()
         </div>
       </div>
 
+      <div>
+        <Player v-if="playerStore.currentTrack" />
+        <div v-else-if="playerStore.deviceId" class="text-center">
+          <Button variant="outline" class="border-green-600 text-green-500 hover:bg-green-600/10" @click="transferPlayback">
+            Play on Echoed
+          </Button>
+        </div>
+      </div>
+
       <div class="text-center">
-        <Button variant="ghost" class="text-gray-600 hover:text-gray-400 text-sm" @click="logout">
+        <Button variant="ghost" class="text-gray-600 hover:text-gray-400 text-sm" @click="handleLogout">
           Logout
         </Button>
       </div>
