@@ -10,10 +10,11 @@ function loadSDKScript(): Promise<void> {
       resolve()
       return
     }
+    window.onSpotifyWebPlaybackSDKReady = () => resolve()
+
     const script = document.createElement('script')
     script.id = 'spotify-sdk'
     script.src = 'https://sdk.scdn.co/spotify-player.js'
-    script.onload = () => resolve()
     script.onerror = () => reject(new Error('Failed to load Spotify SDK'))
     document.head.appendChild(script)
   })
