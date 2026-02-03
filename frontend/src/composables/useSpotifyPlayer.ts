@@ -52,18 +52,27 @@ export function useSpotifyPlayer() {
       volume: 0.8,
     })
 
-    player.on('ready', ({ device_id }) => {
+    player.on('ready', async ({ device_id }) => {
       playerStore.deviceId = device_id
+
+      // player-state-changed only becomes available after ready fires
+      player!.on('player-state-changed', (state) => {
+        playerStore.currentTrack = parseTrack(state)
+        playerStore.isPlaying = !state.paused
+        playerStore.positionMs = state.position
+      })
+
+      // sync initial state in case something was already playing
+      const state = await player!.getCurrentState()
+      if (state) {
+        playerStore.currentTrack = parseTrack(state)
+        playerStore.isPlaying = !state.paused
+        playerStore.positionMs = state.position
+      }
     })
 
     player.on('not_ready', () => {
       playerStore.deviceId = null
-    })
-
-    player.on('player-state-changed', (state) => {
-      playerStore.currentTrack = parseTrack(state)
-      playerStore.isPlaying = !state.paused
-      playerStore.positionMs = state.position
     })
 
     await player.connect()
@@ -87,13 +96,13 @@ export function useSpotifyPlayer() {
   async function transferPlayback(): Promise<void> {
     if (!playerStore.deviceId || !authStore.accessToken) return
 
-    await fetch('https://api.spotify.com/v1/me/player/play', {
+    await fetch('https://api.spotify.com/v1/me/player', {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${authStore.accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ device_ids: [playerStore.deviceId] }),
+      body: JSON.stringify({ device_ids: [playerStore.deviceId], play: true }),
     })
   }
 
