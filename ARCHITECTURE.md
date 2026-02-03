@@ -63,33 +63,36 @@ echoed/
 ├── frontend/                    # Vue 3 app → Vercel
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── auth/
-│   │   │   │   └── AuthCallback.vue
+│   │   │   ├── ui/
+│   │   │   │   └── button/
+│   │   │   │       ├── Button.vue
+│   │   │   │       └── index.ts
+│   │   │   ├── Player.vue
+│   │   │   ├── SyncStatus.vue
 │   │   │   ├── room/
 │   │   │   │   ├── RoomCreate.vue
 │   │   │   │   ├── RoomJoin.vue
 │   │   │   │   └── RoomLobby.vue
-│   │   │   ├── player/
-│   │   │   │   ├── Player.vue
-│   │   │   │   ├── SyncStatus.vue
-│   │   │   │   └── TrackInfo.vue
 │   │   │   ├── queue/
 │   │   │   │   ├── Queue.vue
 │   │   │   │   └── SearchTrack.vue
 │   │   │   └── chat/
 │   │   │       └── Chat.vue
 │   │   ├── composables/
+│   │   │   ├── useAuth.ts
 │   │   │   ├── useSocket.ts
-│   │   │   ├── useSpotifyPlayer.ts
-│   │   │   └── useAuth.ts
+│   │   │   └── useSpotifyPlayer.ts
+│   │   ├── lib/
+│   │   │   └── utils.ts
 │   │   ├── stores/
 │   │   │   ├── auth.ts
 │   │   │   ├── room.ts
 │   │   │   └── player.ts
 │   │   ├── views/
+│   │   │   ├── CallbackView.vue
 │   │   │   ├── HomeView.vue
-│   │   │   ├── RoomView.vue
-│   │   │   └── CallbackView.vue
+│   │   │   ├── LobbyView.vue
+│   │   │   └── RoomView.vue
 │   │   ├── router/
 │   │   │   └── index.ts
 │   │   └── App.vue
@@ -100,7 +103,7 @@ echoed/
 │   ├── src/
 │   │   ├── index.ts             # Entry: Express + Socket.io
 │   │   ├── routes/
-│   │   │   └── auth.ts          # POST /auth/token
+│   │   │   └── auth.ts          # POST /auth/token, POST /auth/refresh
 │   │   ├── socket/
 │   │   │   ├── roomHandlers.ts
 │   │   │   ├── playerHandlers.ts
@@ -130,9 +133,10 @@ User clicks "Login"
   → Frontend redirects to Spotify /authorize (PKCE — no secret in browser)
   → Spotify redirects back to /callback?code=XXX
   → Frontend POSTs code to backend /auth/token
-  → Backend exchanges code → access_token + refresh_token
-  → Backend returns access_token to frontend (refresh_token stays server-side)
-  → Frontend stores token in Pinia, initializes Playback SDK
+  → Backend exchanges code → access_token + refresh_token (using client secret)
+  → Backend returns both tokens to frontend
+  → Frontend stores access_token in Pinia; refresh_token + expiry in sessionStorage
+  → Frontend redirects to /lobby, which initializes Playback SDK on mount
 ```
 
 ### 2. Room + Tight Sync (< 500ms)
@@ -180,7 +184,7 @@ Rooms are ephemeral. Chat and queues reset when a room closes. An in-memory `Map
 
 - [x] 1. Project scaffolding — Vite + Vue 3 + shadcn/vue + Tailwind (frontend), Express + Socket.io (backend)
 - [x] 2. Spotify OAuth — PKCE flow end-to-end, token exchange via backend
-- [ ] 3. Playback SDK — Initialize player in browser, basic play/pause
+- [x] 3. Playback SDK — Initialize player in browser, basic play/pause
 - [ ] 4. Room system — Create/join via Socket.io, in-memory state
 - [ ] 5. Sync engine — Server-driven position broadcast + client-side drift correction
 - [ ] 6. Queue — Search API + shared queue management
