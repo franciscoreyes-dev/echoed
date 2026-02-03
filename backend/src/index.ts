@@ -6,6 +6,7 @@ import { createServer } from 'http'
 import { Server } from 'socket.io'
 import cors from 'cors'
 import authRoutes from './routes/auth'
+import { registerRoomHandlers } from './socket/roomHandlers'
 
 const allowedOrigins: string[] = process.env.FRONTEND_URL
   ? [process.env.FRONTEND_URL]
@@ -22,11 +23,7 @@ app.use(express.json())
 app.use('/auth', authRoutes)
 
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id)
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id)
-  })
+  registerRoomHandlers(io, socket)
 })
 
 const PORT: number = Number(process.env.PORT) || 3000

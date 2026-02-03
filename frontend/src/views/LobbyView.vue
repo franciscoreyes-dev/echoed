@@ -1,16 +1,24 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePlayerStore } from '@/stores/player'
 import { useAuth } from '@/composables/useAuth'
 import { useSpotifyPlayer } from '@/composables/useSpotifyPlayer'
+import { useSocket } from '@/composables/useSocket'
 import { Button } from '@/components/ui/button'
 import Player from '@/components/Player.vue'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const playerStore = usePlayerStore()
 const { logout } = useAuth()
 const { initialize, transferPlayback, destroy } = useSpotifyPlayer()
+const { createRoom, joinRoom, disconnect } = useSocket()
+
+const isJoining = ref(false)
+const joinCode = ref('')
+const joinError = ref('')
 
 onMounted(() => {
   initialize().catch(() => {
@@ -18,8 +26,24 @@ onMounted(() => {
   })
 })
 
+async function handleCreate(): Promise<void> {
+  const code = await createRoom(authStore.userId!, authStore.displayName!)
+  router.push(`/room/${code}`)
+}
+
+async function handleJoin(): Promise<void> {
+  joinError.value = ''
+  try {
+    const code = await joinRoom(joinCode.value.trim().toUpperCase(), authStore.userId!, authStore.displayName!)
+    router.push(`/room/${code}`)
+  } catch (err) {
+    joinError.value = (err as Error).message
+  }
+}
+
 function handleLogout(): void {
   destroy()
+  disconnect()
   logout()
 }
 </script>
@@ -33,13 +57,34 @@ function handleLogout(): void {
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <div class="border border-gray-800 rounded-xl p-6 hover:border-gray-600 transition-colors cursor-pointer">
+        <div
+          class="border border-gray-800 rounded-xl p-6 hover:border-gray-600 transition-colors cursor-pointer"
+          @click="handleCreate"
+        >
           <p class="text-white font-semibold">Create Room</p>
           <p class="text-gray-600 text-xs mt-1">Start a new listening session</p>
         </div>
-        <div class="border border-gray-800 rounded-xl p-6 hover:border-gray-600 transition-colors cursor-pointer">
+
+        <div
+          v-if="!isJoining"
+          class="border border-gray-800 rounded-xl p-6 hover:border-gray-600 transition-colors cursor-pointer"
+          @click="isJoining = true"
+        >
           <p class="text-white font-semibold">Join Room</p>
           <p class="text-gray-600 text-xs mt-1">Enter a room code to join</p>
+        </div>
+        <div v-else class="border border-gray-800 rounded-xl p-6">
+          <p class="text-white font-semibold mb-3">Join Room</p>
+          <input
+            v-model="joinCode"
+            type="text"
+            placeholder="Room code"
+            autofocus
+            class="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-gray-500 placeholder-gray-600"
+            @keydown.enter="handleJoin"
+            @keydown.escape="isJoining = false"
+          />
+          <p v-if="joinError" class="text-red-500 text-xs mt-2">{{ joinError }}</p>
         </div>
       </div>
 

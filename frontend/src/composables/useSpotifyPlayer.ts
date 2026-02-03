@@ -86,7 +86,7 @@ export function useSpotifyPlayer() {
 
   async function play(): Promise<void> {
     if (!player) return
-    await player.play()
+    await player.resume()
   }
 
   async function pause(): Promise<void> {

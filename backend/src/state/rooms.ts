@@ -56,3 +56,10 @@ export function deleteRoom(code: string): void {
 export function getAllRooms(): Map<string, RoomState> {
   return rooms
 }
+
+export function getRoomBySocketId(socketId: string): RoomState | undefined {
+  for (const room of rooms.values()) {
+    if (room.members.has(socketId)) return room
+  }
+  return undefined
+}
